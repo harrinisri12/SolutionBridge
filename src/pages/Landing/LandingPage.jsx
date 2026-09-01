@@ -33,8 +33,8 @@ const LandingPage = () => {
             SB
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-none text-slate-900">GovProcure</h1>
-            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">SolutionBridge</span>
+            <h1 className="font-bold text-lg leading-none text-slate-900">SolutionBridge</h1>
+            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">From Problems to Proven Solution</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -58,10 +58,10 @@ const LandingPage = () => {
             National GovTech Innovation Pipeline
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Innovation Procurement Platform
+            SolutionBridge
           </h1>
           <p className="text-lg sm:text-xl font-medium text-slate-200 tracking-wide">
-            From Government Problem to Proven Innovation
+            From Problems to Proven Solution
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
             A state-of-the-art framework connecting government departments, startups, experts, and independent validators. Discover innovators, manage sandboxed pilots, track real-time KPIs, audit claims, and scale solutions with complete regulatory transparency.
@@ -352,7 +352,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="py-8 bg-slate-950 text-slate-500 px-8 text-center text-xs border-t border-slate-900">
-        <p>© 2026 GovProcure Solutions. Powered by Google Antigravity IDE. All rights reserved.</p>
+        <p>© 2026 SolutionBridge. From Problems to Proven Solution. All rights reserved.</p>
         <p className="mt-2 text-[10px] text-slate-600">Administered under National Procurement Sandbox Guideline No. 431/2026.</p>
       </footer>
 

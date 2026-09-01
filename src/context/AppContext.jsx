@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import {
   DEPARTMENTS,
+  CATEGORIES,
   STARTUPS,
   CHALLENGES,
-  INITIAL_APPLICATIONS,
-  INITIAL_EVALUATIONS,
-  INITIAL_PILOTS,
-  INITIAL_PAYMENTS,
+  APPLICATIONS,
+  PILOTS,
+  PROCUREMENT_RECORDS,
   INITIAL_NOTIFICATIONS,
-  INITIAL_AUDIT_LOGS
+  RECENT_ACTIVITIES
 } from '../data/mockData';
 
 const AppContext = createContext();
@@ -22,17 +22,26 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  // State variables
   const [challenges, setChallenges] = useState(CHALLENGES);
-  const [applications, setApplications] = useState(INITIAL_APPLICATIONS);
-  const [evaluations, setEvaluations] = useState(INITIAL_EVALUATIONS);
-  const [pilots, setPilots] = useState(INITIAL_PILOTS);
-  const [payments, setPayments] = useState(INITIAL_PAYMENTS);
+  const [applications, setApplications] = useState(APPLICATIONS);
+  const [pilots, setPilots] = useState(PILOTS);
+  const [procurementRecords, setProcurementRecords] = useState(PROCUREMENT_RECORDS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
+  const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES);
   const [toasts, setToasts] = useState([]);
-  
-  // Toast notifications helper
+
+  // Active Role and User Persona
+  // Valid roles: "Government", "Startup", "Expert"
+  const [currentRole, setCurrentRoleState] = useState("Government");
+  const [currentUser, setCurrentUser] = useState({
+    name: "Dr. K. Srinivas, IAS",
+    designation: "Principal Secretary & Mission Director",
+    department: "Water Resources & Innovation Mission",
+    role: "Government",
+    email: "dir.innovate@gov.in",
+    avatar: "KS"
+  });
+
   const addToast = (message, type = "success") => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -40,394 +49,365 @@ export const AppProvider = ({ children }) => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
   };
-  
-  // Simulation Role State
-  const [currentRole, setCurrentRoleState] = useState("Government"); // Government, Startup, Expert, Validator, Finance
-  const [currentUser, setCurrentUser] = useState({
-    name: "Sarah Jenkins (Director of Innovation)",
-    department: "Health Department",
-    role: "Government",
-    email: "s.jenkins@health.gov"
-  });
 
-  // Sync current user when currentRole changes
-  const setCurrentRole = (role) => {
-    setCurrentRoleState(role);
-    if (role === "Government") {
-      setCurrentUser({
-        name: "Sarah Jenkins (Director of Innovation)",
-        department: "Health Department",
-        role: "Government",
-        email: "s.jenkins@health.gov"
-      });
-    } else if (role === "Startup") {
-      setCurrentUser({
-        name: "HealthTech Solutions Team",
-        role: "Startup",
-        email: "info@healthtech.com",
-        startupId: "startup-1"
-      });
-    } else if (role === "Expert") {
-      setCurrentUser({
-        name: "Dr. Ramesh Chandra (Scientific Advisor)",
-        role: "Expert",
-        email: "r.chandra@nationalsci.org"
-      });
-    } else if (role === "Validator") {
-      setCurrentUser({
-        name: "Independent Auditor Group",
-        role: "Validator",
-        email: "audit@independentvalidate.org"
-      });
-    } else if (role === "Finance") {
-      setCurrentUser({
-        name: "Arthur Pendelton (Chief Finance Officer)",
-        role: "Finance",
-        email: "a.pendelton@finance.gov"
-      });
-    }
-    
-    // Add log
-    logAction(
-      `Role Impersonator`,
-      `Switched session to ${role} role`,
-      "Session Control",
-      "Success"
-    );
-  };
-
-  // Helper log functions
-  const logAction = (user, action, module, status) => {
-    const timestamp = new Date().toLocaleString();
-    const newLog = {
-      id: `log-${Date.now()}`,
-      user,
-      action,
-      module,
-      date: timestamp,
-      status
+  const logActivity = (title, department, type = "Action", badge = "Updated", statusColor = "blue") => {
+    const newAct = {
+      id: `act-${Date.now()}`,
+      title,
+      department,
+      type,
+      badge,
+      statusColor,
+      timestamp: "Just now"
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    setRecentActivities(prev => [newAct, ...prev]);
   };
 
-  const triggerNotification = (title, message, role) => {
+  const triggerNotification = (title, message, role = "Government", type = "info") => {
     const newNotif = {
       id: `notif-${Date.now()}`,
       title,
       message,
-      date: new Date().toISOString().split('T')[0],
-      read: false,
-      role
+      role,
+      type,
+      timestamp: "Just now",
+      read: false
     };
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  // 1. Challenge Actions
-  const publishChallenge = (challengeData) => {
+  const setCurrentRole = (role) => {
+    setCurrentRoleState(role);
+    if (role === "Government") {
+      setCurrentUser({
+        name: "Dr. K. Srinivas, IAS",
+        designation: "Principal Secretary & Mission Director",
+        department: "Water Resources & Innovation Mission",
+        role: "Government",
+        email: "dir.innovate@gov.in",
+        avatar: "KS"
+      });
+    } else if (role === "Startup") {
+      setCurrentUser({
+        name: "Dr. Arvind Subramaniam",
+        designation: "Co-Founder & CEO",
+        startupName: "AquaTech Solutions",
+        startupId: "startup-1",
+        role: "Startup",
+        email: "contact@aquatech.io",
+        avatar: "AS"
+      });
+    } else if (role === "Expert" || role === "Expert / Evaluator") {
+      setCurrentRoleState("Expert");
+      setCurrentUser({
+        name: "Dr. Ramesh Chandra",
+        designation: "Chairperson, Technical Screening & Evaluation Committee",
+        institution: "National Innovation Council / IIT Delhi",
+        role: "Expert",
+        email: "r.chandra@nic.in",
+        avatar: "RC"
+      });
+    }
+    addToast(`Switched active workspace to ${role} Portal`, "info");
+  };
+
+  // 1. Challenge Handlers
+  const publishChallenge = (challengeData, isDraft = false) => {
     const newChallenge = {
       id: `CH-2026-00${challenges.length + 1}`,
       ...challengeData,
-      status: "Open"
+      status: isDraft ? "Draft" : "Published",
+      applicationsCount: 0
     };
-    setChallenges(prev => [...prev, newChallenge]);
-    logAction(currentUser.name, `Created & Published Challenge: ${challengeData.title}`, "Challenges", "Success");
-    triggerNotification("New Challenge Published", `Health Department published '${challengeData.title}'`, "Startup");
+    setChallenges(prev => [newChallenge, ...prev]);
+    logActivity(
+      `${isDraft ? "Drafted" : "Published"} Challenge: ${challengeData.title}`,
+      challengeData.department,
+      isDraft ? "Draft Created" : "Challenge Published",
+      isDraft ? "Draft" : "Published",
+      isDraft ? "slate" : "blue"
+    );
+    triggerNotification(
+      "New Challenge Published",
+      `${challengeData.department} announced challenge: ${challengeData.title}`,
+      "Startup",
+      "info"
+    );
+    addToast(isDraft ? "Challenge saved as draft" : "Challenge published successfully!", "success");
     return newChallenge;
   };
 
-  // 2. Application Actions
+  // 2. Application Handlers
   const submitApplication = (appData) => {
     const newApp = {
-      id: `app-${Date.now().toString().slice(-4)}`,
-      status: "Submitted",
+      id: `APP-2026-0${applications.length + 1}`,
       submittedDate: new Date().toISOString().split('T')[0],
+      status: "Submitted",
+      eligibility: "Under Review",
+      scores: {
+        technicalFeasibility: 0,
+        innovation: 0,
+        costEffectiveness: 0,
+        scalability: 0,
+        risk: 0,
+        overallScore: 0
+      },
       ...appData
     };
-    setApplications(prev => [...prev, newApp]);
+    setApplications(prev => [newApp, ...prev]);
+    // increment challenge application count
+    setChallenges(prev => prev.map(c => c.id === appData.challengeId ? { ...c, applicationsCount: (c.applicationsCount || 0) + 1 } : c));
     
-    const startupName = STARTUPS.find(s => s.id === appData.startupId)?.name || "Fictional Startup";
-    const challengeTitle = challenges.find(c => c.id === appData.challengeId)?.title || "Challenge";
-    
-    logAction(startupName, `Submitted Application for Challenge ID: ${appData.challengeId}`, "Applications", "Success");
-    triggerNotification("Application Submitted", `${startupName} applied for '${challengeTitle}'`, "Government");
+    logActivity(
+      `${appData.startupName} applied for ${appData.challengeTitle}`,
+      appData.department,
+      "New Application",
+      "Submitted",
+      "blue"
+    );
+    triggerNotification(
+      "New Application Received",
+      `${appData.startupName} submitted a proposal for '${appData.challengeTitle}'`,
+      "Government",
+      "info"
+    );
+    triggerNotification(
+      "Evaluation Queue Updated",
+      `New proposal by ${appData.startupName} assigned for evaluation.`,
+      "Expert",
+      "info"
+    );
+    addToast("Application submitted successfully!", "success");
     return newApp;
   };
 
-  // 3. Screening / Eligibility Actions
-  const updateApplicationStatus = (appId, status, comment) => {
+  const updateApplicationStatus = (appId, status, recommendation = "") => {
     setApplications(prev => prev.map(app => {
       if (app.id === appId) {
-        const startupName = STARTUPS.find(s => s.id === app.startupId)?.name || "Startup";
-        const challengeTitle = challenges.find(c => c.id === app.challengeId)?.title || "Challenge";
-        
-        logAction(currentUser.name, `Updated application status for ${startupName} to: ${status}`, "Screening", "Success");
-        triggerNotification(
-          `Application Status Updated`, 
-          `Your application for '${challengeTitle}' is now marked as '${status}'`, 
-          "Startup"
-        );
-        return { ...app, status, screeningComment: comment };
-      }
-      return app;
-    }));
-  };
-
-  // 4. Expert Evaluation
-  const submitEvaluation = (evalData) => {
-    const newEval = {
-      id: `eval-${Date.now().toString().slice(-3)}`,
-      submittedDate: new Date().toISOString().split('T')[0],
-      ...evalData
-    };
-    setEvaluations(prev => [...prev, newEval]);
-
-    // Automatically update the application status to 'Under Review' when evaluated
-    setApplications(prev => prev.map(app => {
-      if (app.id === evalData.applicationId) {
-        return { ...app, status: "Under Review" };
-      }
-      return app;
-    }));
-
-    const app = applications.find(a => a.id === evalData.applicationId);
-    const startupName = STARTUPS.find(s => s.id === app?.startupId)?.name || "Startup";
-    
-    logAction(currentUser.name, `Submitted evaluation for ${startupName}`, "Evaluations", "Success");
-    triggerNotification("Evaluation Completed", `Expert ${evalData.expertName} submitted evaluation for ${startupName}`, "Government");
-  };
-
-  // 5. Pilot Creation
-  const createPilot = (pilotData) => {
-    const newPilot = {
-      id: `pilot-${Date.now().toString().slice(-3)}`,
-      ...pilotData,
-      status: "Planning", // Planning, Active, Completed, Validated, Scaled
-      contractApproved: false,
-      validationDetails: {
-        status: "Unverified",
-        validatorClaimant: "",
-        validatorResult: "",
-        validatorComments: "",
-        validatorFile: ""
-      },
-      scaleUpScore: 0,
-      scaleUpStatus: "Under Review"
-    };
-
-    setPilots(prev => [...prev, newPilot]);
-
-    // Also pre-create payment requests for the finance dashboard linked to these milestones
-    const initialPayments = pilotData.milestones.map((m, index) => ({
-      id: `pay-${Date.now().toString().slice(-3)}-${index}`,
-      pilotId: newPilot.id,
-      pilotTitle: pilotData.challengeTitle,
-      startupName: pilotData.startupName,
-      milestoneId: m.id || `m-${index + 1}`,
-      milestoneTitle: m.title,
-      percentage: m.weight,
-      amount: m.budgetShare,
-      status: index === 0 ? "Pending Approval" : "Draft", // First milestone immediately requestable
-      invoiceDate: index === 0 ? new Date().toISOString().split('T')[0] : null,
-      paidDate: null
-    }));
-    
-    setPayments(prev => [...prev, ...initialPayments]);
-
-    // Set the original challenge status to "Pilot Selected"
-    setChallenges(prev => prev.map(c => {
-      if (c.id === pilotData.challengeId) {
-        return { ...c, status: "Pilot Selected" };
-      }
-      return c;
-    }));
-
-    // Update application status to Pilot Selected
-    setApplications(prev => prev.map(app => {
-      if (app.challengeId === pilotData.challengeId && app.startupId === pilotData.startupId) {
-        return { ...app, status: "Pilot Selected" };
-      } else if (app.challengeId === pilotData.challengeId) {
-        return { ...app, status: "Rejected" };
-      }
-      return app;
-    }));
-
-    logAction(currentUser.name, `Created Pilot for ${pilotData.startupName}`, "Pilot Management", "Success");
-    triggerNotification("Pilot Initiated", `A pilot project was initiated for '${pilotData.challengeTitle}' with ${pilotData.startupName}`, "Startup");
-    return newPilot;
-  };
-
-  // 6. Contract Approvals
-  const approveContract = (pilotId) => {
-    setPilots(prev => prev.map(p => {
-      if (p.id === pilotId) {
-        logAction(currentUser.name, `Approved contract for pilot: ${p.challengeTitle}`, "Contracts", "Success");
-        triggerNotification("Contract Approved", `The contract for '${p.challengeTitle}' has been approved. Pilot status set to Active.`, "Startup");
-        return { ...p, contractApproved: true, status: "Active" };
-      }
-      return p;
-    }));
-  };
-
-  const requestContractChanges = (pilotId, notes) => {
-    setPilots(prev => prev.map(p => {
-      if (p.id === pilotId) {
-        logAction(currentUser.name, `Requested contract changes: ${notes}`, "Contracts", "Success");
-        triggerNotification("Contract Revision Requested", `Changes requested on contract terms: "${notes}"`, "Government");
-        return { ...p, contractApproved: false, contractNotes: notes };
-      }
-      return p;
-    }));
-  };
-
-  // 7. KPI Tracker (update actual metrics)
-  const updateKPIValues = (pilotId, updatedKpis) => {
-    setPilots(prev => prev.map(p => {
-      if (p.id === pilotId) {
-        // Calculate pass/fail based on target values
-        const evaluatedKpis = updatedKpis.map(kpi => {
-          let isPass = false;
-          const baseline = parseFloat(kpi.baseline);
-          const target = parseFloat(kpi.target);
-          const actual = parseFloat(kpi.actual);
-          
-          if (!isNaN(actual)) {
-            // Check if baseline -> target is decreasing (e.g. waiting time) or increasing (e.g. accuracy)
-            const targetImproving = target > baseline;
-            if (targetImproving) {
-              isPass = actual >= target;
-            } else {
-              isPass = actual <= target;
-            }
-          }
-          
-          return {
-            ...kpi,
-            status: isNaN(actual) ? "PENDING" : (isPass ? "PASSED" : "FAILED")
-          };
-        });
-
-        logAction(currentUser.name, `Logged actual values for KPIs on pilot: ${p.challengeTitle}`, "KPIs", "Success");
-        return { ...p, kpis: evaluatedKpis };
-      }
-      return p;
-    }));
-  };
-
-  // 8. Independent Validator Actions
-  const submitValidation = (pilotId, validatorClaimant, validatorResult, validatorComments, status) => {
-    setPilots(prev => prev.map(p => {
-      if (p.id === pilotId) {
-        const nextStatus = status === "Verified" ? "Validated" : "Active";
-        
-        logAction(currentUser.name, `Validated pilot metrics: ${status} (${validatorResult})`, "Validation", "Success");
-        triggerNotification("Validation Audit Complete", `Validator marked results for '${p.challengeTitle}' as ${status}.`, "Government");
-        
         return {
-          ...p,
+          ...app,
+          status,
+          expertRecommendation: recommendation || app.expertRecommendation
+        };
+      }
+      return app;
+    }));
+    const app = applications.find(a => a.id === appId);
+    if (app) {
+      logActivity(
+        `Application ${app.startupName} status updated to: ${status}`,
+        app.department,
+        "Application Updated",
+        status,
+        status === "Selected" || status === "Shortlisted" ? "green" : status === "Rejected" ? "red" : "blue"
+      );
+      triggerNotification(
+        `Application ${status}`,
+        `Your application for '${app.challengeTitle}' is now marked as '${status}'.`,
+        "Startup",
+        status === "Selected" ? "success" : "info"
+      );
+    }
+    addToast(`Application status updated to ${status}`, "success");
+  };
+
+  const submitExpertEvaluation = (appId, scores, recommendation, actionType = "Recommend") => {
+    const overall = (
+      (scores.technicalFeasibility * 0.25) +
+      (scores.innovation * 0.20) +
+      (scores.costEffectiveness * 0.20) +
+      (scores.scalability * 0.20) +
+      (scores.risk * 0.15)
+    ).toFixed(2);
+
+    const numericOverall = parseFloat(overall);
+
+    let nextStatus = "Under Evaluation";
+    if (actionType === "Shortlist") nextStatus = "Shortlisted";
+    else if (actionType === "Recommend") nextStatus = "Selected";
+    else if (actionType === "Reject") nextStatus = "Rejected";
+
+    setApplications(prev => prev.map(app => {
+      if (app.id === appId) {
+        return {
+          ...app,
           status: nextStatus,
-          validationDetails: {
-            status,
-            validatorClaimant,
-            validatorResult,
-            validatorComments,
-            validatorFile: "Independent_Audit_Report.pdf"
-          }
+          scores: {
+            ...scores,
+            overallScore: numericOverall
+          },
+          expertRecommendation: recommendation,
+          evaluatedBy: currentUser.name,
+          evaluationDate: new Date().toISOString().split('T')[0]
         };
       }
-      return p;
+      return app;
     }));
+
+    const app = applications.find(a => a.id === appId);
+    logActivity(
+      `Expert score logged for ${app?.startupName || 'Startup'} (${numericOverall}/10)`,
+      app?.department || "Gov",
+      "Evaluation Completed",
+      `Score: ${numericOverall}`,
+      "green"
+    );
+    triggerNotification(
+      "Evaluation Submitted",
+      `${currentUser.name} completed evaluation for ${app?.startupName} (Score: ${numericOverall}/10).`,
+      "Government",
+      "success"
+    );
+    addToast("Evaluation scorecard submitted successfully!", "success");
   };
 
-  // 9. Payment Management
-  const updatePaymentStatus = (paymentId, status) => {
-    setPayments(prev => prev.map(pay => {
-      if (pay.id === paymentId) {
-        const timestamp = status === "Paid" ? new Date().toISOString().split('T')[0] : null;
-        
-        // Find pilot and update milestone status
-        setPilots(currentPilots => currentPilots.map(p => {
-          if (p.id === pay.pilotId) {
-            const updatedMilestones = p.milestones.map(m => {
-              if (m.id === pay.milestoneId) {
-                return { ...m, status: status === "Paid" ? "Paid" : "In Progress" };
-              }
-              return m;
-            });
-            
-            // Check if all milestones are paid, and update pilot state
-            const allCompleted = updatedMilestones.every(m => m.status === "Paid");
-            let nextPilotStatus = p.status;
-            if (allCompleted && p.status === "Active") {
-              nextPilotStatus = "Completed";
-            }
-
-            return { ...p, milestones: updatedMilestones, status: nextPilotStatus };
+  // 3. Pilot & Evidence Handlers
+  const uploadPilotEvidence = (pilotId, milestoneId, fileData) => {
+    setPilots(prev => prev.map(pilot => {
+      if (pilot.id === pilotId) {
+        const updatedMilestones = pilot.milestones.map(m => {
+          if (m.id === milestoneId) {
+            const existingEvidence = m.evidence || [];
+            const newEv = {
+              name: fileData.name,
+              date: new Date().toISOString().split('T')[0],
+              type: fileData.type || "Document",
+              status: "Pending Review"
+            };
+            return {
+              ...m,
+              evidence: [newEv, ...existingEvidence]
+            };
           }
-          return p;
-        }));
-
-        // Trigger notifications
-        triggerNotification(
-          "Payment Status Updated", 
-          `Milestone payment of $${pay.amount} is now ${status}`, 
-          "Startup"
-        );
-        logAction(currentUser.name, `Updated payment request state to: ${status} for ${pay.startupName}`, "Payments", "Success");
-
-        return { ...pay, status, paidDate: timestamp };
+          return m;
+        });
+        return { ...pilot, milestones: updatedMilestones };
       }
-      return pay;
+      return pilot;
     }));
+
+    const p = pilots.find(x => x.id === pilotId);
+    logActivity(
+      `Evidence uploaded: ${fileData.name}`,
+      p?.department || "Department",
+      "Evidence Upload",
+      "Pending Review",
+      "blue"
+    );
+    triggerNotification(
+      "New Pilot Evidence Uploaded",
+      `${p?.startupName} uploaded evidence '${fileData.name}' for verification.`,
+      "Expert",
+      "info"
+    );
+    triggerNotification(
+      "Pilot Evidence Submitted",
+      `Evidence file '${fileData.name}' received for ${p?.challengeTitle}.`,
+      "Government",
+      "info"
+    );
+    addToast(`File "${fileData.name}" uploaded successfully for verification`, "success");
   };
 
-  // Function for Startup to request/invoice a milestone
-  const requestMilestonePayment = (pilotId, milestoneId) => {
-    setPayments(prev => {
-      // Look for a payment that matches and is in "Draft"
-      let found = false;
-      let targetMilestoneTitle = "Milestone";
-      const updated = prev.map(pay => {
-        if (pay.pilotId === pilotId && pay.milestoneId === milestoneId && (pay.status === "Draft" || pay.status === "Rejected")) {
-          found = true;
-          targetMilestoneTitle = pay.milestoneTitle;
-          return { ...pay, status: "Pending Approval", invoiceDate: new Date().toISOString().split('T')[0] };
-        }
-        return pay;
-      });
-      if (found) {
-        const p = pilots.find(x => x.id === pilotId);
-        logAction(p?.startupName || "Startup", `Invoiced milestone payment request for pilot: ${p?.challengeTitle}`, "Payments", "Success");
-        triggerNotification("New Invoice Received", `${p?.startupName} submitted an invoice for ${targetMilestoneTitle}`, "Finance");
-        return updated;
+  const verifyEvidence = (pilotId, milestoneId, fileName, status) => {
+    setPilots(prev => prev.map(pilot => {
+      if (pilot.id === pilotId) {
+        const updatedMilestones = pilot.milestones.map(m => {
+          if (m.id === milestoneId) {
+            const updatedEv = (m.evidence || []).map(ev => {
+              if (ev.name === fileName) {
+                return { ...ev, status };
+              }
+              return ev;
+            });
+            return { ...m, evidence: updatedEv };
+          }
+          return m;
+        });
+        return { ...pilot, milestones: updatedMilestones };
       }
-      return prev;
-    });
+      return pilot;
+    }));
+    addToast(`Evidence "${fileName}" marked as ${status}`, "info");
   };
 
-  // 10. Scale-Up Decision
-  const submitScaleUpDecision = (pilotId, decision, comments) => {
+  const submitPilotValidation = (pilotId, validationStatus, comments) => {
     setPilots(prev => prev.map(p => {
       if (p.id === pilotId) {
-        let finalStatus = "Validated";
-        if (decision === "Scale Up") {
-          finalStatus = "Scaled";
-        }
-        
-        logAction(currentUser.name, `Final scale decision for ${p.startupName}: ${decision}`, "Scale-Up", "Success");
-        triggerNotification("Scale-Up Decision Made", `Government finalized scale-up decision for '${p.challengeTitle}': ${decision}`, "Startup");
-        
         return {
           ...p,
-          status: finalStatus,
-          scaleUpStatus: decision,
-          scaleUpComments: comments
+          status: validationStatus === "Validated" ? "Validation" : p.status,
+          expertValidation: {
+            expertName: currentUser.name,
+            validationStatus,
+            validationDate: new Date().toISOString().split('T')[0],
+            comments
+          }
         };
       }
       return p;
     }));
+    const p = pilots.find(x => x.id === pilotId);
+    logActivity(
+      `Pilot validation report submitted for ${p?.startupName} (${validationStatus})`,
+      p?.department || "Gov",
+      "Pilot Validation",
+      validationStatus,
+      validationStatus === "Validated" ? "green" : "orange"
+    );
+    triggerNotification(
+      "Pilot Validation Signed Off",
+      `Final validation for '${p?.challengeTitle}' submitted: ${validationStatus}.`,
+      "Government",
+      validationStatus === "Validated" ? "success" : "warning"
+    );
+    addToast(`Pilot validation result "${validationStatus}" recorded!`, "success");
   };
 
-  // Notification read helper
+  // 4. Procurement & Payments Handlers
+  const approveProcurement = (procurementId) => {
+    setProcurementRecords(prev => prev.map(pr => {
+      if (pr.id === procurementId) {
+        return {
+          ...pr,
+          procurementStatus: "Procured",
+          scaleUpStatus: "Scaled",
+          orderDate: new Date().toISOString().split('T')[0]
+        };
+      }
+      return pr;
+    }));
+    const pr = procurementRecords.find(p => p.id === procurementId);
+    logActivity(
+      `Direct Procurement Approved: ${pr?.solutionName}`,
+      pr?.department || "Gov",
+      "Procurement Approved",
+      "Procured & Scaled",
+      "green"
+    );
+    triggerNotification(
+      "Procurement Contract Executed",
+      `Direct Procurement Order executed for ${pr?.solutionName} (${pr?.contractValue}).`,
+      "Startup",
+      "success"
+    );
+    addToast("Procurement approved and Direct Procurement Order (DPO) issued!", "success");
+  };
+
+  const updateMilestonePayment = (procurementId, milestoneIndex, status) => {
+    setProcurementRecords(prev => prev.map(pr => {
+      if (pr.id === procurementId) {
+        const updated = [...pr.paymentMilestones];
+        if (updated[milestoneIndex]) {
+          updated[milestoneIndex] = { ...updated[milestoneIndex], status };
+        }
+        return { ...pr, paymentMilestones: updated };
+      }
+      return pr;
+    }));
+    addToast(`Milestone payment status updated to ${status}`, "success");
+  };
+
   const markNotificationRead = (id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
@@ -438,33 +418,32 @@ export const AppProvider = ({ children }) => {
 
   return (
     <AppContext.Provider value={{
+      DEPARTMENTS,
+      CATEGORIES,
+      STARTUPS,
       challenges,
       applications,
-      evaluations,
       pilots,
-      payments,
+      procurementRecords,
       notifications,
-      auditLogs,
+      recentActivities,
+      toasts,
       currentRole,
       currentUser,
-      toasts,
-      addToast,
       setCurrentRole,
+      addToast,
       publishChallenge,
       submitApplication,
       updateApplicationStatus,
-      submitEvaluation,
-      createPilot,
-      approveContract,
-      requestContractChanges,
-      updateKPIValues,
-      submitValidation,
-      updatePaymentStatus,
-      requestMilestonePayment,
-      submitScaleUpDecision,
+      submitExpertEvaluation,
+      uploadPilotEvidence,
+      verifyEvidence,
+      submitPilotValidation,
+      approveProcurement,
+      updateMilestonePayment,
       markNotificationRead,
       markAllNotificationsRead,
-      logAction,
+      logActivity,
       triggerNotification
     }}>
       {children}

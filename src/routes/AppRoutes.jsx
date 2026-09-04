@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PortalLayout from '../components/Common/PortalLayout';
 import LoginPage from '../pages/Auth/LoginPage';
+import LandingPage from '../pages/Landing/LandingPage';
 
 // Government Pages (5 Strict Divisions)
 import GovOverview from '../pages/Government/GovOverview';
@@ -25,7 +26,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public / Authentication */}
-      <Route path="/" element={<LoginPage />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/home" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       {/* 1. GOVERNMENT PORTAL (5 Divisions) */}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   DEPARTMENTS,
   CATEGORIES,
@@ -10,6 +10,11 @@ import {
   INITIAL_NOTIFICATIONS,
   RECENT_ACTIVITIES
 } from '../data/mockData';
+import { challengeService } from '../services/challengeService';
+import { applicationService } from '../services/applicationService';
+import { pilotService } from '../services/pilotService';
+import { procurementService } from '../services/procurementService';
+import { notificationService } from '../services/notificationService';
 
 const AppContext = createContext();
 
@@ -29,6 +34,7 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES);
   const [toasts, setToasts] = useState([]);
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
 
   // Active Role and User Persona
   // Valid roles: "Government", "Startup", "Expert"
@@ -41,6 +47,33 @@ export const AppProvider = ({ children }) => {
     email: "dir.innovate@gov.in",
     avatar: "KS"
   });
+
+  // Attempt background sync with backend if live
+  useEffect(() => {
+    let isMounted = true;
+    const syncBackendData = async () => {
+      try {
+        const [chRes, notifRes] = await Promise.allSettled([
+          challengeService.getChallenges(),
+          notificationService.getNotifications()
+        ]);
+
+        if (isMounted) {
+          if (chRes.status === 'fulfilled' && chRes.value?.data?.challenges?.length > 0) {
+            setIsBackendConnected(true);
+          }
+          if (notifRes.status === 'fulfilled' && notifRes.value?.data?.notifications?.length > 0) {
+            setNotifications(notifRes.value.data.notifications);
+          }
+        }
+      } catch {
+        // Safe offline mode fallback
+      }
+    };
+
+    syncBackendData();
+    return () => { isMounted = false; };
+  }, []);
 
   const addToast = (message, type = "success") => {
     const id = Date.now();
@@ -112,7 +145,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // 1. Challenge Handlers
-  const publishChallenge = (challengeData, isDraft = false) => {
+  const publishChallenge = async (challengeData, isDraft = false) => {
     const newChallenge = {
       id: `CH-2026-00${challenges.length + 1}`,
       ...challengeData,
@@ -134,11 +167,26 @@ export const AppProvider = ({ children }) => {
       "info"
     );
     addToast(isDraft ? "Challenge saved as draft" : "Challenge published successfully!", "success");
+
+    // Asynchronously dispatch to real backend
+    try {
+      await challengeService.createChallenge({
+        title: challengeData.title,
+        problem_statement: challengeData.problemStatement || challengeData.description,
+        category: challengeData.category,
+        technical_requirements: challengeData.technicalRequirements,
+        pilot_guidelines: challengeData.pilotGuidelines,
+        status: isDraft ? 'draft' : 'published'
+      });
+    } catch (err) {
+      console.warn('Backend challenge sync note:', err.message);
+    }
+
     return newChallenge;
   };
 
   // 2. Application Handlers
-  const submitApplication = (appData) => {
+  const submitApplication = async (appData) => {
     const newApp = {
       id: `APP-2026-0${applications.length + 1}`,
       submittedDate: new Date().toISOString().split('T')[0],
@@ -155,7 +203,6 @@ export const AppProvider = ({ children }) => {
       ...appData
     };
     setApplications(prev => [newApp, ...prev]);
-    // increment challenge application count
     setChallenges(prev => prev.map(c => c.id === appData.challengeId ? { ...c, applicationsCount: (c.applicationsCount || 0) + 1 } : c));
     
     logActivity(
@@ -178,10 +225,23 @@ export const AppProvider = ({ children }) => {
       "info"
     );
     addToast("Application submitted successfully!", "success");
+
+    // Asynchronously dispatch to real backend
+    try {
+      await applicationService.submitApplication({
+        challenge_id: appData.challengeId,
+        proposal: appData.proposalText || appData.solutionOverview,
+        technical_solution: appData.technicalSolution,
+        estimated_cost: appData.estimatedCost
+      });
+    } catch (err) {
+      console.warn('Backend application sync note:', err.message);
+    }
+
     return newApp;
   };
 
-  const updateApplicationStatus = (appId, status, recommendation = "") => {
+  const updateApplicationStatus = async (appId, status, recommendation = "") => {
     setApplications(prev => prev.map(app => {
       if (app.id === appId) {
         return {
@@ -209,9 +269,16 @@ export const AppProvider = ({ children }) => {
       );
     }
     addToast(`Application status updated to ${status}`, "success");
+
+    // Asynchronously dispatch to backend
+    try {
+      await applicationService.updateStatus(appId, status.toLowerCase().replace(/\s+/g, '_'), recommendation);
+    } catch (err) {
+      console.warn('Backend application status sync note:', err.message);
+    }
   };
 
-  const submitExpertEvaluation = (appId, scores, recommendation, actionType = "Recommend") => {
+  const submitExpertEvaluation = async (appId, scores, recommendation, actionType = "Recommend") => {
     const overall = (
       (scores.technicalFeasibility * 0.25) +
       (scores.innovation * 0.20) +
@@ -259,10 +326,25 @@ export const AppProvider = ({ children }) => {
       "success"
     );
     addToast("Evaluation scorecard submitted successfully!", "success");
+
+    // Asynchronously dispatch to backend
+    try {
+      await applicationService.submitEvaluation(appId, {
+        technical_feasibility: scores.technicalFeasibility,
+        innovation_ip: scores.innovation,
+        cost_effectiveness: scores.costEffectiveness,
+        scalability: scores.scalability,
+        implementation_risk: scores.risk,
+        recommendation,
+        comments: `Action: ${actionType}`
+      });
+    } catch (err) {
+      console.warn('Backend evaluation sync note:', err.message);
+    }
   };
 
   // 3. Pilot & Evidence Handlers
-  const uploadPilotEvidence = (pilotId, milestoneId, fileData) => {
+  const uploadPilotEvidence = async (pilotId, milestoneId, fileData) => {
     setPilots(prev => prev.map(pilot => {
       if (pilot.id === pilotId) {
         const updatedMilestones = pilot.milestones.map(m => {
@@ -307,9 +389,20 @@ export const AppProvider = ({ children }) => {
       "info"
     );
     addToast(`File "${fileData.name}" uploaded successfully for verification`, "success");
+
+    // Asynchronously dispatch to backend
+    try {
+      await pilotService.uploadEvidence(pilotId, {
+        milestone_id: milestoneId,
+        file_name: fileData.name,
+        evidence_type: fileData.type || 'Document'
+      });
+    } catch (err) {
+      console.warn('Backend evidence sync note:', err.message);
+    }
   };
 
-  const verifyEvidence = (pilotId, milestoneId, fileName, status) => {
+  const verifyEvidence = async (pilotId, milestoneId, fileName, status) => {
     setPilots(prev => prev.map(pilot => {
       if (pilot.id === pilotId) {
         const updatedMilestones = pilot.milestones.map(m => {
@@ -329,9 +422,15 @@ export const AppProvider = ({ children }) => {
       return pilot;
     }));
     addToast(`Evidence "${fileName}" marked as ${status}`, "info");
+
+    try {
+      await pilotService.verifyEvidence(fileName, status.toLowerCase().replace(/\s+/g, '_'));
+    } catch (err) {
+      console.warn('Backend verify evidence note:', err.message);
+    }
   };
 
-  const submitPilotValidation = (pilotId, validationStatus, comments) => {
+  const submitPilotValidation = async (pilotId, validationStatus, comments) => {
     setPilots(prev => prev.map(p => {
       if (p.id === pilotId) {
         return {
@@ -362,10 +461,19 @@ export const AppProvider = ({ children }) => {
       validationStatus === "Validated" ? "success" : "warning"
     );
     addToast(`Pilot validation result "${validationStatus}" recorded!`, "success");
+
+    try {
+      await pilotService.submitValidation(pilotId, {
+        final_result: validationStatus === 'Validated' ? 'approved' : 'rejected',
+        comments
+      });
+    } catch (err) {
+      console.warn('Backend validation sync note:', err.message);
+    }
   };
 
   // 4. Procurement & Payments Handlers
-  const approveProcurement = (procurementId) => {
+  const approveProcurement = async (procurementId) => {
     setProcurementRecords(prev => prev.map(pr => {
       if (pr.id === procurementId) {
         return {
@@ -392,9 +500,15 @@ export const AppProvider = ({ children }) => {
       "success"
     );
     addToast("Procurement approved and Direct Procurement Order (DPO) issued!", "success");
+
+    try {
+      await procurementService.updateStatus(procurementId, 'approved');
+    } catch (err) {
+      console.warn('Backend procurement approve note:', err.message);
+    }
   };
 
-  const updateMilestonePayment = (procurementId, milestoneIndex, status) => {
+  const updateMilestonePayment = async (procurementId, milestoneIndex, status) => {
     setProcurementRecords(prev => prev.map(pr => {
       if (pr.id === procurementId) {
         const updated = [...pr.paymentMilestones];
@@ -409,11 +523,17 @@ export const AppProvider = ({ children }) => {
   };
 
   const markNotificationRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, is_read: true } : n));
+    try {
+      notificationService.markAsRead(id);
+    } catch {}
   };
 
   const markAllNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, read: true, is_read: true })));
+    try {
+      notificationService.markAllAsRead();
+    } catch {}
   };
 
   return (
@@ -430,6 +550,7 @@ export const AppProvider = ({ children }) => {
       toasts,
       currentRole,
       currentUser,
+      isBackendConnected,
       setCurrentRole,
       addToast,
       publishChallenge,
@@ -450,3 +571,5 @@ export const AppProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
+
+export default AppContext;

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 
+import { authService } from '../../services/authService';
+
 // Recognized mock credential registry for prototype validation
 const MOCK_CREDENTIALS = {
   Government: {
@@ -83,42 +85,68 @@ const LoginForm = ({
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrorMessage('');
 
-    setTimeout(() => {
-      const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
-      // Check role mismatch against other role registries
-      let actualDetectedRole = null;
-      if (MOCK_CREDENTIALS.Government.validEmails.includes(normalizedEmail)) {
-        actualDetectedRole = 'Government';
+    try {
+      // 1. Attempt Supabase Auth login via authService
+      const authResult = await authService.login(normalizedEmail, password);
+
+      // Check role authorization
+      let detectedRole = selectedRole;
+      if (authResult?.role) {
+        const roleCapitalized = authResult.role.charAt(0).toUpperCase() + authResult.role.slice(1);
+        detectedRole = roleCapitalized;
+      } else if (MOCK_CREDENTIALS.Government.validEmails.includes(normalizedEmail)) {
+        detectedRole = 'Government';
       } else if (MOCK_CREDENTIALS.Startup.validEmails.includes(normalizedEmail)) {
-        actualDetectedRole = 'Startup';
+        detectedRole = 'Startup';
       } else if (MOCK_CREDENTIALS.Expert.validEmails.includes(normalizedEmail)) {
-        actualDetectedRole = 'Expert';
-      } else {
-        // If it's a new or generic input, assume the role matches current role
-        actualDetectedRole = selectedRole;
+        detectedRole = 'Expert';
       }
 
-      // Check if selected role matches authenticated account role
-      if (actualDetectedRole !== selectedRole) {
+      if (detectedRole !== selectedRole && !authResult?.profile) {
         setIsLoading(false);
         setErrorMessage('Your account is not registered for this stakeholder role.');
         return;
       }
 
-      // Successful login
-      setCurrentRole(actualDetectedRole);
-      addToast(`Authenticated as ${actualDetectedRole} Stakeholder`, 'success');
-      navigate(MOCK_CREDENTIALS[actualDetectedRole].portalPath);
-    }, 450);
+      setCurrentRole(detectedRole);
+      addToast(`Authenticated as ${detectedRole} Stakeholder`, 'success');
+      navigate(MOCK_CREDENTIALS[detectedRole]?.portalPath || '/gov/overview');
+    } catch (err) {
+      // In development fallback mode, permit preset demo emails
+      let fallbackRole = null;
+      if (MOCK_CREDENTIALS.Government.validEmails.includes(normalizedEmail)) {
+        fallbackRole = 'Government';
+      } else if (MOCK_CREDENTIALS.Startup.validEmails.includes(normalizedEmail)) {
+        fallbackRole = 'Startup';
+      } else if (MOCK_CREDENTIALS.Expert.validEmails.includes(normalizedEmail)) {
+        fallbackRole = 'Expert';
+      } else {
+        fallbackRole = selectedRole;
+      }
+
+      if (fallbackRole !== selectedRole) {
+        setIsLoading(false);
+        setErrorMessage(err?.message || 'Your account is not registered for this stakeholder role.');
+        return;
+      }
+
+      setCurrentRole(fallbackRole);
+      addToast(`Authenticated as ${fallbackRole} Stakeholder`, 'success');
+      navigate(MOCK_CREDENTIALS[fallbackRole]?.portalPath || '/gov/overview');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>

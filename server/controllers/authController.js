@@ -5,14 +5,14 @@ import { createNotification } from '../services/notificationService.js';
 import { logger } from '../utils/logger.js';
 
 /**
- * Get authenticated user profile and associated stakeholder data
  * GET /api/auth/me
+ *
+ * Returns the authenticated user's SolutionBridge profile.
  */
 export const getMe = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Fetch full profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -20,35 +20,53 @@ export const getMe = async (req, res) => {
       .single();
 
     if (profileError || !profile) {
-      return ApiResponse.error(res, 'Profile not found', 404, 'NOT_FOUND');
+      return ApiResponse.error(
+        res,
+        'Profile not found',
+        404,
+        'NOT_FOUND'
+      );
     }
 
     let extraData = {};
 
-    // If role is startup, load startup record
+    /*
+     * Startup-specific data
+     *
+     * IMPORTANT:
+     * Your database uses startups.user_id,
+     * not startups.profile_id.
+     */
     if (profile.role === 'startup') {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('*')
-        .eq('profile_id', userId)
+        .eq('user_id', userId)
         .maybeSingle();
 
       extraData.startup = startup || null;
     }
 
-    // If role is expert, load expert record
+    /*
+     * Expert-specific data
+     */
     if (profile.role === 'expert') {
       const { data: expert } = await supabaseAdmin
         .from('experts')
         .select('*')
-        .eq('profile_id', userId)
+        .eq('user_id', userId)
         .maybeSingle();
 
       extraData.expert = expert || null;
     }
 
-    // If role is government and has department_id, load department
-    if (profile.role === 'government' && profile.department_id) {
+    /*
+     * Government department
+     */
+    if (
+      profile.role === 'government' &&
+      profile.department_id
+    ) {
       const { data: department } = await supabaseAdmin
         .from('government_departments')
         .select('*')
@@ -61,7 +79,7 @@ export const getMe = async (req, res) => {
     return ApiResponse.success(
       res,
       {
-        user: {
+        profile: {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
@@ -69,7 +87,7 @@ export const getMe = async (req, res) => {
           phone: profile.phone,
           organization: profile.organization,
           is_admin: Boolean(profile.is_admin),
-          is_active: Boolean(profile.is_active),
+          is_active: profile.is_active !== false,
           department_id: profile.department_id,
           created_at: profile.created_at,
           ...extraData
@@ -77,143 +95,357 @@ export const getMe = async (req, res) => {
       },
       'User profile loaded successfully'
     );
+
   } catch (error) {
-    logger.error('Error in getMe controller', error);
-    return ApiResponse.error(res, 'Failed to fetch user profile', 500, 'SERVER_ERROR');
+    logger.error(
+      'Error in getMe controller',
+      error
+    );
+
+    return ApiResponse.error(
+      res,
+      'Failed to fetch user profile',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
+
 /**
- * Public Startup Registration
  * POST /api/auth/register-startup
- * NOTE: Enforces that public registration ONLY permits role === 'startup'
+ *
+ * IMPORTANT:
+ * The Supabase Auth account is already created
+ * by the frontend using supabase.auth.signUp().
+ *
+ * This endpoint ONLY creates/updates the
+ * SolutionBridge profile and startup record.
+ *
+ * The route must be protected by requireAuth.
  */
 export const registerStartup = async (req, res) => {
   try {
-    const { email, password, full_name, phone, organization, startup_name, dpiit_number, sector, website, description } = req.body;
 
-    if (!email || !password || !full_name) {
+    /*
+     * The authenticated Supabase user.
+     */
+    const userId = req.user?.id;
+
+    if (!userId) {
       return ApiResponse.error(
         res,
-        'Email, password, and full name are required for registration',
+        'Authentication is required to register a startup.',
+        401,
+        'UNAUTHORIZED'
+      );
+    }
+
+    const {
+      full_name,
+      phone,
+      organization,
+      company_name,
+      dpiit_number,
+      sector,
+      website,
+      description
+    } = req.body || {};
+
+    /*
+     * Validate required startup information.
+     */
+    if (!full_name || !full_name.trim()) {
+      return ApiResponse.error(
+        res,
+        'Founder name is required.',
         422,
         'VALIDATION_ERROR'
       );
     }
 
-    // 1. Create Auth User in Supabase Auth (Forces role='startup')
-    const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: {
-          full_name,
-          role: 'startup',
-          phone,
-          organization: organization || startup_name
-        }
-      }
-    });
-
-    if (authError || !authData?.user) {
-      logger.warn('Startup signup auth error', { error: authError?.message });
+    if (!company_name || !company_name.trim()) {
       return ApiResponse.error(
         res,
-        authError?.message || 'Could not register startup user account',
-        400,
-        'SIGNUP_FAILED'
+        'Startup / Company Name is required.',
+        422,
+        'VALIDATION_ERROR'
       );
     }
 
-    const userId = authData.user.id;
-
-    // 2. Ensure Profile Record in 'profiles' (Role is locked to 'startup')
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .upsert([
-        {
-          id: userId,
-          email: email.trim().toLowerCase(),
-          full_name,
-          role: 'startup',
-          phone: phone || null,
-          organization: organization || startup_name || full_name,
-          is_active: true,
-          is_admin: false,
-          created_at: new Date().toISOString()
-        }
-      ])
-      .select()
-      .single();
-
-    if (profileError) {
-      logger.error('Error creating startup profile record', profileError);
+    if (!dpiit_number || !dpiit_number.trim()) {
+      return ApiResponse.error(
+        res,
+        'DPIIT Recognition Number is required.',
+        422,
+        'VALIDATION_ERROR'
+      );
     }
 
-    // 3. Create Startup Record in 'startups'
-    let startupRecord = null;
-    if (startup_name || dpiit_number) {
-      const { data: startup, error: startupError } = await supabaseAdmin
-        .from('startups')
-        .insert([
+    /*
+     * Get the authenticated user's email
+     * directly from Supabase Auth.
+     */
+    const {
+      data: authUserData,
+      error: authUserError
+    } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (authUserError || !authUserData?.user) {
+      return ApiResponse.error(
+        res,
+        'Authenticated Supabase user could not be found.',
+        401,
+        'UNAUTHORIZED'
+      );
+    }
+
+    const authUser = authUserData.user;
+
+    const email =
+      authUser.email?.trim().toLowerCase();
+
+    /*
+     * Make sure this authenticated account
+     * is a startup account.
+     *
+     * Public signup must never create
+     * government or expert accounts.
+     */
+    const metadataRole =
+      authUser.user_metadata?.role;
+
+    if (
+      metadataRole &&
+      metadataRole !== 'startup'
+    ) {
+      return ApiResponse.error(
+        res,
+        'Only startup accounts can use public startup registration.',
+        403,
+        'FORBIDDEN'
+      );
+    }
+
+    /*
+     * 1. Create/update SolutionBridge profile.
+     *
+     * The database trigger normally creates this
+     * automatically during Supabase signup.
+     *
+     * We use upsert here so registration remains
+     * reliable even if the trigger is delayed/missing.
+     */
+    const { data: profile, error: profileError } =
+      await supabaseAdmin
+        .from('profiles')
+        .upsert(
           {
-            profile_id: userId,
-            name: startup_name || organization || full_name,
-            dpiit_number: dpiit_number || `DPIIT-${Date.now().toString().slice(-6)}`,
-            sector: sector || 'Technology',
-            website: website || null,
-            description: description || null,
-            verified: false,
-            created_at: new Date().toISOString()
+            id: userId,
+            email,
+            full_name: full_name.trim(),
+            role: 'startup',
+            phone: phone?.trim() || null,
+            organization:
+              organization?.trim() ||
+              company_name.trim(),
+            is_active: true,
+            is_admin: false
+          },
+          {
+            onConflict: 'id'
           }
-        ])
+        )
         .select()
         .single();
 
-      if (!startupError) {
-        startupRecord = startup;
-      } else {
-        logger.error('Error inserting startup details', startupError);
-      }
+    if (profileError) {
+      logger.error(
+        'Error creating startup profile',
+        profileError
+      );
+
+      return ApiResponse.error(
+        res,
+        profileError.message ||
+          'Unable to create startup profile.',
+        500,
+        'PROFILE_CREATION_FAILED'
+      );
     }
 
-    // 4. Log Audit Event
-    await logAudit({
-      userId,
-      action: AuditActions.STARTUP_CREATED,
-      entityType: 'startup',
-      entityId: startupRecord?.id || userId,
-      description: `Startup '${startup_name || full_name}' registered under DPIIT account.`
-    });
+    /*
+     * 2. Create startup record.
+     *
+     * IMPORTANT:
+     * Your schema uses user_id.
+     */
+    const { data: existingStartup } =
+      await supabaseAdmin
+        .from('startups')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    // 5. Notify Government Admins
-    await createNotification({
-      role: 'government',
-      title: 'New Startup Registered',
-      message: `Startup '${startup_name || full_name}' (${dpiit_number || 'DPIIT Registered'}) has joined SolutionBridge.`,
-      type: 'info'
-    });
+    let startupRecord = null;
 
+    if (existingStartup?.id) {
+
+      /*
+       * Startup already exists.
+       * Update its information.
+       */
+      const {
+        data: updatedStartup,
+        error: updateError
+      } = await supabaseAdmin
+        .from('startups')
+        .update({
+          name: company_name.trim(),
+          dpiit_number: dpiit_number.trim(),
+          sector: sector || 'Technology',
+          website: website?.trim() || null,
+          description:
+            description?.trim() || null
+        })
+        .eq('id', existingStartup.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        logger.error(
+          'Error updating startup record',
+          updateError
+        );
+
+        return ApiResponse.error(
+          res,
+          updateError.message ||
+            'Unable to update startup details.',
+          500,
+          'STARTUP_UPDATE_FAILED'
+        );
+      }
+
+      startupRecord = updatedStartup;
+
+    } else {
+
+      /*
+       * Create startup record.
+       */
+      const {
+        data: newStartup,
+        error: startupError
+      } = await supabaseAdmin
+        .from('startups')
+        .insert({
+          user_id: userId,
+          name: company_name.trim(),
+          dpiit_number: dpiit_number.trim(),
+          sector: sector || 'Technology',
+          website: website?.trim() || null,
+          description:
+            description?.trim() || null,
+          verified: false
+        })
+        .select()
+        .single();
+
+      if (startupError) {
+        logger.error(
+          'Error creating startup record',
+          startupError
+        );
+
+        return ApiResponse.error(
+          res,
+          startupError.message ||
+            'Unable to create startup record.',
+          500,
+          'STARTUP_CREATION_FAILED'
+        );
+      }
+
+      startupRecord = newStartup;
+    }
+
+    /*
+     * 3. Audit log
+     */
+    try {
+      await logAudit({
+        userId,
+        action: AuditActions.STARTUP_CREATED,
+        entityType: 'startup',
+        entityId:
+          startupRecord?.id || userId,
+        description:
+          `Startup '${company_name.trim()}' registered under DPIIT account.`
+      });
+    } catch (auditError) {
+      logger.warn(
+        'Audit logging failed during startup registration',
+        auditError
+      );
+    }
+
+    /*
+     * 4. Notify Government.
+     *
+     * Notification failure should NOT make
+     * startup registration fail.
+     */
+    try {
+      await createNotification({
+        role: 'government',
+        title: 'New Startup Registered',
+        message:
+          `Startup '${company_name.trim()}' (${dpiit_number.trim()}) has joined SolutionBridge.`,
+        type: 'info'
+      });
+    } catch (notificationError) {
+      logger.warn(
+        'Startup notification failed',
+        notificationError
+      );
+    }
+
+    /*
+     * 5. Return successful registration.
+     */
     return ApiResponse.success(
       res,
       {
         user: {
           id: userId,
-          email: profile?.email || email,
-          full_name: profile?.full_name || full_name,
-          role: 'startup',
-          startup: startupRecord
+          email,
+          full_name: profile.full_name,
+          role: 'startup'
         },
-        session: authData.session
+        startup: startupRecord
       },
-      'Startup account created successfully',
+      'Startup registration completed successfully',
       201
     );
+
   } catch (error) {
-    logger.error('Error in registerStartup controller', error);
-    return ApiResponse.error(res, 'Startup registration failed', 500, 'SERVER_ERROR');
+
+    logger.error(
+      'Error in registerStartup controller',
+      error
+    );
+
+    return ApiResponse.error(
+      res,
+      error?.message ||
+        'Startup registration failed.',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
+
 
 export default {
   getMe,

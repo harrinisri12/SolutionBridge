@@ -14,11 +14,12 @@ export const listChallenges = async (req, res) => {
 
     let query = supabaseAdmin
       .from('challenges')
-      .select('*, government_departments(name, code, ministry), applications(count)')
+      .select('*, government_departments(name), applications(count)')
       .order('created_at', { ascending: false });
 
     // Non-government users can only see published challenges unless specific access
     const userRole = req.user?.role?.toLowerCase();
+
     if (userRole !== 'government') {
       query = query.eq('status', 'published');
     } else if (status) {
@@ -28,30 +29,50 @@ export const listChallenges = async (req, res) => {
     if (category && category !== 'All') {
       query = query.eq('category', category);
     }
+
     if (department_id) {
       query = query.eq('department_id', department_id);
     }
+
     if (search) {
-      query = query.or(`title.ilike.%${search}%,problem_statement.ilike.%${search}%`);
+      query = query.or(
+        `title.ilike.%${search}%,problem_statement.ilike.%${search}%`
+      );
     }
 
     const { data: challenges, error } = await query;
 
     if (error) {
       logger.error('Error fetching challenges', error);
-      return ApiResponse.error(res, 'Failed to retrieve challenges', 500, 'SERVER_ERROR');
+      return ApiResponse.error(
+        res,
+        'Failed to retrieve challenges',
+        500,
+        'SERVER_ERROR'
+      );
     }
 
     // Format application count for UI consumption
     const formatted = (challenges || []).map((ch) => ({
       ...ch,
-      applicationsCount: ch.applications ? ch.applications[0]?.count || 0 : 0
+      applicationsCount: ch.applications
+        ? ch.applications[0]?.count || 0
+        : 0
     }));
 
-    return ApiResponse.success(res, { challenges: formatted }, 'Challenges retrieved successfully');
+    return ApiResponse.success(
+      res,
+      { challenges: formatted },
+      'Challenges retrieved successfully'
+    );
   } catch (error) {
     logger.error('Error in listChallenges controller', error);
-    return ApiResponse.error(res, 'Failed to fetch challenges', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to fetch challenges',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -65,18 +86,32 @@ export const getChallengeById = async (req, res) => {
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
-      .select('*, government_departments(name, code, ministry, state), applications(count)')
+      .select('*, government_departments(name), applications(count)')
       .eq('id', id)
       .single();
 
     if (error || !challenge) {
-      return ApiResponse.error(res, 'Challenge problem statement not found', 404, 'NOT_FOUND');
+      return ApiResponse.error(
+        res,
+        'Challenge problem statement not found',
+        404,
+        'NOT_FOUND'
+      );
     }
 
-    return ApiResponse.success(res, { challenge }, 'Challenge retrieved successfully');
+    return ApiResponse.success(
+      res,
+      { challenge },
+      'Challenge retrieved successfully'
+    );
   } catch (error) {
     logger.error('Error in getChallengeById controller', error);
-    return ApiResponse.error(res, 'Failed to fetch challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to fetch challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -88,6 +123,7 @@ export const createChallenge = async (req, res) => {
   try {
     const userId = req.user.id;
     const userDept = req.user.department_id;
+
     const {
       title,
       problem_statement,
@@ -105,7 +141,12 @@ export const createChallenge = async (req, res) => {
     } = req.body;
 
     if (!title || !problem_statement) {
-      return ApiResponse.error(res, 'Title and problem statement are required', 422, 'VALIDATION_ERROR');
+      return ApiResponse.error(
+        res,
+        'Title and problem statement are required',
+        422,
+        'VALIDATION_ERROR'
+      );
     }
 
     const targetDept = department_id || userDept;
@@ -121,7 +162,9 @@ export const createChallenge = async (req, res) => {
           department_id: targetDept,
           created_by: userId,
           budget: budget || null,
-          budget_numeric: budget_numeric ? Number(budget_numeric) : null,
+          budget_numeric: budget_numeric
+            ? Number(budget_numeric)
+            : null,
           deadline: deadline || null,
           pilot_duration: pilot_duration || '6 Months',
           location: location || null,
@@ -129,7 +172,9 @@ export const createChallenge = async (req, res) => {
           pilot_guidelines: pilot_guidelines || null,
           eligibility_criteria: eligibility_criteria || null,
           status: isPublished ? 'published' : 'draft',
-          published_at: isPublished ? new Date().toISOString() : null,
+          published_at: isPublished
+            ? new Date().toISOString()
+            : null,
           created_at: new Date().toISOString()
         }
       ])
@@ -138,16 +183,25 @@ export const createChallenge = async (req, res) => {
 
     if (error) {
       logger.error('Error inserting challenge record', error);
-      return ApiResponse.error(res, 'Failed to create challenge', 500, 'SERVER_ERROR');
+      return ApiResponse.error(
+        res,
+        'Failed to create challenge',
+        500,
+        'SERVER_ERROR'
+      );
     }
 
     // Audit Log
     await logAudit({
       userId,
-      action: isPublished ? AuditActions.CHALLENGE_PUBLISHED : AuditActions.CHALLENGE_CREATED,
+      action: isPublished
+        ? AuditActions.CHALLENGE_PUBLISHED
+        : AuditActions.CHALLENGE_CREATED,
       entityType: 'challenge',
       entityId: challenge.id,
-      description: `${isPublished ? 'Published' : 'Drafted'} challenge '${title}' for department`
+      description: `${
+        isPublished ? 'Published' : 'Drafted'
+      } challenge '${title}' for department`
     });
 
     // Notify startups if published
@@ -160,10 +214,20 @@ export const createChallenge = async (req, res) => {
       });
     }
 
-    return ApiResponse.success(res, { challenge }, 'Challenge created successfully', 201);
+    return ApiResponse.success(
+      res,
+      { challenge },
+      'Challenge created successfully',
+      201
+    );
   } catch (error) {
     logger.error('Error in createChallenge controller', error);
-    return ApiResponse.error(res, 'Failed to create challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to create challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -175,6 +239,7 @@ export const updateChallenge = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+
     const {
       title,
       problem_statement,
@@ -194,16 +259,39 @@ export const updateChallenge = async (req, res) => {
     };
 
     if (title) updates.title = title.trim();
-    if (problem_statement) updates.problem_statement = problem_statement.trim();
+    if (problem_statement) {
+      updates.problem_statement = problem_statement.trim();
+    }
     if (category) updates.category = category;
     if (budget !== undefined) updates.budget = budget;
-    if (budget_numeric !== undefined) updates.budget_numeric = Number(budget_numeric);
-    if (deadline !== undefined) updates.deadline = deadline;
-    if (pilot_duration !== undefined) updates.pilot_duration = pilot_duration;
-    if (location !== undefined) updates.location = location;
-    if (technical_requirements !== undefined) updates.technical_requirements = technical_requirements;
-    if (pilot_guidelines !== undefined) updates.pilot_guidelines = pilot_guidelines;
-    if (eligibility_criteria !== undefined) updates.eligibility_criteria = eligibility_criteria;
+
+    if (budget_numeric !== undefined) {
+      updates.budget_numeric = Number(budget_numeric);
+    }
+
+    if (deadline !== undefined) {
+      updates.deadline = deadline;
+    }
+
+    if (pilot_duration !== undefined) {
+      updates.pilot_duration = pilot_duration;
+    }
+
+    if (location !== undefined) {
+      updates.location = location;
+    }
+
+    if (technical_requirements !== undefined) {
+      updates.technical_requirements = technical_requirements;
+    }
+
+    if (pilot_guidelines !== undefined) {
+      updates.pilot_guidelines = pilot_guidelines;
+    }
+
+    if (eligibility_criteria !== undefined) {
+      updates.eligibility_criteria = eligibility_criteria;
+    }
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
@@ -214,7 +302,12 @@ export const updateChallenge = async (req, res) => {
 
     if (error || !challenge) {
       logger.error('Error updating challenge', error);
-      return ApiResponse.error(res, 'Failed to update challenge', 500, 'SERVER_ERROR');
+      return ApiResponse.error(
+        res,
+        'Failed to update challenge',
+        500,
+        'SERVER_ERROR'
+      );
     }
 
     await logAudit({
@@ -225,10 +318,19 @@ export const updateChallenge = async (req, res) => {
       description: `Challenge '${challenge.title}' updated by ${req.user.email}`
     });
 
-    return ApiResponse.success(res, { challenge }, 'Challenge updated successfully');
+    return ApiResponse.success(
+      res,
+      { challenge },
+      'Challenge updated successfully'
+    );
   } catch (error) {
     logger.error('Error in updateChallenge controller', error);
-    return ApiResponse.error(res, 'Failed to update challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to update challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -251,7 +353,12 @@ export const publishChallenge = async (req, res) => {
       .single();
 
     if (error || !challenge) {
-      return ApiResponse.error(res, 'Failed to publish challenge', 404, 'NOT_FOUND');
+      return ApiResponse.error(
+        res,
+        'Failed to publish challenge',
+        404,
+        'NOT_FOUND'
+      );
     }
 
     await logAudit({
@@ -269,10 +376,19 @@ export const publishChallenge = async (req, res) => {
       type: 'info'
     });
 
-    return ApiResponse.success(res, { challenge }, 'Challenge published successfully');
+    return ApiResponse.success(
+      res,
+      { challenge },
+      'Challenge published successfully'
+    );
   } catch (error) {
     logger.error('Error in publishChallenge controller', error);
-    return ApiResponse.error(res, 'Failed to publish challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to publish challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -295,7 +411,12 @@ export const closeChallenge = async (req, res) => {
       .single();
 
     if (error || !challenge) {
-      return ApiResponse.error(res, 'Failed to close challenge', 404, 'NOT_FOUND');
+      return ApiResponse.error(
+        res,
+        'Failed to close challenge',
+        404,
+        'NOT_FOUND'
+      );
     }
 
     await logAudit({
@@ -306,10 +427,19 @@ export const closeChallenge = async (req, res) => {
       description: `Challenge '${challenge.title}' closed for new submissions by ${req.user.email}`
     });
 
-    return ApiResponse.success(res, { challenge }, 'Challenge marked as closed');
+    return ApiResponse.success(
+      res,
+      { challenge },
+      'Challenge marked as closed'
+    );
   } catch (error) {
     logger.error('Error in closeChallenge controller', error);
-    return ApiResponse.error(res, 'Failed to close challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to close challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 
@@ -321,22 +451,48 @@ export const deleteChallenge = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { data: challenge } = await supabaseAdmin.from('challenges').select('status, title').eq('id', id).single();
+    const { data: challenge } = await supabaseAdmin
+      .from('challenges')
+      .select('status, title')
+      .eq('id', id)
+      .single();
 
     if (challenge && challenge.status === 'published') {
-      return ApiResponse.error(res, 'Published challenges cannot be deleted. Close the challenge instead.', 400, 'CANNOT_DELETE_PUBLISHED');
+      return ApiResponse.error(
+        res,
+        'Published challenges cannot be deleted. Close the challenge instead.',
+        400,
+        'CANNOT_DELETE_PUBLISHED'
+      );
     }
 
-    const { error } = await supabaseAdmin.from('challenges').delete().eq('id', id);
+    const { error } = await supabaseAdmin
+      .from('challenges')
+      .delete()
+      .eq('id', id);
 
     if (error) {
-      return ApiResponse.error(res, 'Failed to delete challenge', 500, 'SERVER_ERROR');
+      return ApiResponse.error(
+        res,
+        'Failed to delete challenge',
+        500,
+        'SERVER_ERROR'
+      );
     }
 
-    return ApiResponse.success(res, { id }, 'Challenge deleted successfully');
+    return ApiResponse.success(
+      res,
+      { id },
+      'Challenge deleted successfully'
+    );
   } catch (error) {
     logger.error('Error in deleteChallenge controller', error);
-    return ApiResponse.error(res, 'Failed to delete challenge', 500, 'SERVER_ERROR');
+    return ApiResponse.error(
+      res,
+      'Failed to delete challenge',
+      500,
+      'SERVER_ERROR'
+    );
   }
 };
 

@@ -340,51 +340,7 @@ const GovProcurement = () => {
         </div>
       )}
 
-      {/* 4. REPORTS & ANALYTICAL CHARTS SECTION */}
-      <div>
-        <div className="mb-4">
-          <h3 className="text-base font-bold text-slate-900">
-            Government Innovation Procurement Analytics & Impact Reports
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Key procurement performance indicators, category distributions, and success conversion rates.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <ChartCard
-            title="Challenges by Sector & Category"
-            subtitle="Distribution of innovation demand across departments"
-            type="doughnut"
-            data={categoryChartData}
-            height={260}
-          />
-
-          <ChartCard
-            title="Application Conversion Funnel"
-            subtitle="Startup proposals from submission to direct procurement"
-            type="bar"
-            data={applicationRateChartData}
-            height={260}
-          />
-
-          <ChartCard
-            title="Pilot Validation & Scale-Up Success Rate"
-            subtitle="Proportion of completed field trials reaching statewide procurement"
-            type="bar"
-            data={pilotRateChartData}
-            height={260}
-          />
-
-          <ChartCard
-            title="Cumulative Procurement Impact & Budget Deployed"
-            subtitle="Quarterly capital allocated under innovation procurement (2026)"
-            type="line"
-            data={impactChartData}
-            height={260}
-          />
-        </div>
-      </div>
+        
 
       {/* DPO EXECUTION CONFIRMATION MODAL */}
       <Modal

@@ -145,60 +145,6 @@ const StartupOverview = () => {
         />
       </div>
 
-      {/* Middle Grid: Mini Activity Chart & Active Pilot Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2">
-          <ChartCard
-            title="Application & Pilot Activity Funnel"
-            subtitle="Live status distribution across proposal lifecycles"
-            type="bar"
-            data={startupActivityData}
-            height={260}
-            action={
-              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                {submittedCount} Total Proposals
-              </span>
-            }
-          />
-        </div>
-
-        {/* Recent Notifications */}
-        <div className="gov-card p-5">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Bell className="w-4 h-4 text-blue-600" />
-              Notifications & Alerts
-            </h3>
-            <span className="text-[10px] font-bold uppercase text-slate-400">
-              Recent
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {notifications.length === 0 ? (
-              <div className="py-6 text-center text-slate-400 text-xs">
-                No unread notifications.
-              </div>
-            ) : (
-              notifications.slice(0, 4).map((notif) => (
-                <div
-                  key={notif.id}
-                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">{notif.title}</span>
-                    <span className="text-[10px] text-slate-400">{notif.timestamp || notif.created_at}</span>
-                  </div>
-                  <p className="text-slate-600 leading-relaxed text-[11px]">
-                    {notif.message}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Current Application & Pilot Status Pipeline */}
       <div className="gov-card p-5">
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">

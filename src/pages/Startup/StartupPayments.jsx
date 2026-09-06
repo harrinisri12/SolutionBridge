@@ -238,75 +238,7 @@ const StartupPayments = () => {
         </div>
       </div>
 
-      {/* 3. FINAL OUTCOME DASHBOARD */}
-      <div className="gov-card p-6 bg-slate-900 text-white shadow-md">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              <h3 className="text-base font-bold text-white">
-                Final Innovation Procurement Lifecycle Outcome
-              </h3>
-            </div>
-            <p className="text-xs text-slate-300">
-              End-to-end verification and direct procurement scale-up status for AquaTech Solutions.
-            </p>
-          </div>
-          <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-700">
-            TRL-9 Commercial Ready
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-              1. Pilot Field Result
-            </span>
-            <span className="text-sm font-bold text-emerald-400 block">
-              100% KPI Validated
-            </span>
-            <span className="text-xs text-slate-300 mt-1 block">
-              8.5 min alert latency (Target &lt;15 min)
-            </span>
-          </div>
-
-          <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-              2. Validation Status
-            </span>
-            <span className="text-sm font-bold text-emerald-400 block">
-              Conclusively Validated
-            </span>
-            <span className="text-xs text-slate-300 mt-1 block">
-              Signed by Dr. Ramesh Chandra
-            </span>
-          </div>
-
-          <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-              3. Procurement Status
-            </span>
-            <span className="text-sm font-bold text-blue-400 block">
-              Procurement in Progress
-            </span>
-            <span className="text-xs text-slate-300 mt-1 block">
-              DPO Issued (₹ 4.20 Cr)
-            </span>
-          </div>
-
-          <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-              4. Scale-Up Status
-            </span>
-            <span className="text-sm font-bold text-purple-400 block">
-              Statewide Scale-Up
-            </span>
-            <span className="text-xs text-slate-300 mt-1 block">
-              150 Stations across 12 Municipalities
-            </span>
-          </div>
-        </div>
-      </div>
+      
 
       {/* INVOICE VOUCHER PREVIEW MODAL */}
       {selectedInvoice && (

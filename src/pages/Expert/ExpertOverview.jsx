@@ -17,7 +17,6 @@ import { StatCard } from '../../components/Common/Card';
 import ChartCard from '../../components/Common/ChartCard';
 import Badge from '../../components/Common/Badge';
 import Button from '../../components/Common/Button';
-import LifecycleStepper from '../../components/Common/LifecycleStepper';
 
 const ExpertOverview = () => {
   const { applications, pilots, recentActivities, currentUser } = useApp();
@@ -63,9 +62,6 @@ const ExpertOverview = () => {
           </Button>
         </div>
       </div>
-
-      {/* Lifecycle Stepper */}
-      <LifecycleStepper activeStage={3} />
 
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -20,6 +20,7 @@ import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import EmptyState from '../../components/Common/EmptyState';
+import GovChallengeDetail from './GovChallengeDetail';
 
 const GovChallenges = () => {
   const { challenges, DEPARTMENTS, CATEGORIES, publishChallenge } = useApp();
@@ -30,7 +31,7 @@ const GovChallenges = () => {
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
 
-  // Modal States
+  // Modal & View States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
 
@@ -94,6 +95,15 @@ const GovChallenges = () => {
 
     return matchesSearch && matchesCategory && matchesStatus && matchesDepartment;
   });
+
+  if (selectedChallenge) {
+    return (
+      <GovChallengeDetail
+        challenge={selectedChallenge}
+        onBack={() => setSelectedChallenge(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -240,8 +250,11 @@ const GovChallenges = () => {
               <div>
                 {/* Header info */}
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <span className="text-[11px] font-bold text-slate-500 font-mono">
-                    {ch.id}
+                  <span
+                    className="text-[11px] font-bold text-slate-500 font-mono tracking-wide"
+                    title={ch.id}
+                  >
+                    {ch.id.length > 12 ? `#${ch.id.slice(0, 8).toUpperCase()}` : ch.id}
                   </span>
                   <Badge status={ch.status} size="sm" />
                 </div>
@@ -283,8 +296,8 @@ const GovChallenges = () => {
                       Deadline
                     </span>
                     <span className="font-semibold text-slate-800 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      {ch.deadline}
+                      <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                      {ch.deadline || '2026-11-30'}
                     </span>
                   </div>
                   <div>
@@ -292,7 +305,7 @@ const GovChallenges = () => {
                       Pilot Budget
                     </span>
                     <span className="font-semibold text-emerald-800">
-                      {ch.budget}
+                      {ch.budget || '₹ 75,00,000'}
                     </span>
                   </div>
                 </div>
@@ -575,106 +588,6 @@ const GovChallenges = () => {
           </div>
         </div>
       </Modal>
-
-      {/* CHALLENGE DETAILS MODAL */}
-      {selectedChallenge && (
-        <Modal
-          isOpen={!!selectedChallenge}
-          onClose={() => setSelectedChallenge(null)}
-          title={selectedChallenge.title}
-          subtitle={`${selectedChallenge.id} • ${selectedChallenge.department}`}
-          maxWidth="max-w-3xl"
-          footer={
-            <Button
-              variant="outline"
-              onClick={() => setSelectedChallenge(null)}
-            >
-              Close
-            </Button>
-          }
-        >
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Category
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">
-                  {selectedChallenge.category}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Status
-                </span>
-                <Badge status={selectedChallenge.status} size="sm" />
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Application Deadline
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">
-                  {selectedChallenge.deadline}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Pilot Budget
-                </span>
-                <span className="font-semibold text-emerald-800 text-sm">
-                  {selectedChallenge.budget}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Problem Statement & Operational Context
-              </h4>
-              <p className="text-slate-700 leading-relaxed bg-white p-3 rounded border border-slate-200">
-                {selectedChallenge.problemDescription}
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Expected Solution
-              </h4>
-              <p className="text-slate-700 leading-relaxed bg-white p-3 rounded border border-slate-200">
-                {selectedChallenge.expectedSolution || 'Automated high-reliability system matching government operational benchmarks.'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                  Eligibility Criteria
-                </h4>
-                <div className="bg-slate-50 p-3 rounded border border-slate-200 text-slate-700">
-                  {selectedChallenge.eligibilityCriteria || 'DPIIT recognized startups with proven prototypes.'}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                  Required Technology
-                </h4>
-                <div className="bg-slate-50 p-3 rounded border border-slate-200 text-slate-700">
-                  {selectedChallenge.requiredTechnology || 'IoT, Edge Computing, Telemetry'}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Pilot Deployment Requirements
-              </h4>
-              <div className="bg-blue-50/60 p-3 rounded border border-blue-200 text-blue-900 leading-relaxed">
-                {selectedChallenge.pilotRequirements || `Duration: ${selectedChallenge.pilotDuration}. Location: ${selectedChallenge.location}.`}
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

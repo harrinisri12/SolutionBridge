@@ -13,54 +13,52 @@ import {
   ShieldAlert,
   UserCog,
   ScrollText,
-  Target,
   FileCheck2,
   Zap,
-  CheckCircle2
+  Settings,
+  HelpCircle,
+  Flag,
+  FileText,
+  Scale
 } from 'lucide-react';
 
 const Sidebar = () => {
-  const { currentRole, currentUser, authProfile, logout } = useApp();
+  const { currentRole, currentUser, authProfile, logout, challenges, applications, pilots, procurementRecords } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // STRICT Navigation Divisions:
-  // Admin: platform administration only
-  // Government: 5 divisions
-  // Startup: 4 divisions
-  // Expert: 3 divisions
   const getNavItems = () => {
     switch (currentRole) {
       case 'Admin':
         return [
-          { name: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
-          { name: 'Government Officers', path: '/admin/government-officers', icon: UserCog },
-          { name: 'Experts', path: '/admin/experts', icon: ShieldCheck },
-          { name: 'Startups', path: '/admin/startups', icon: Rocket },
-          { name: 'Departments', path: '/admin/departments', icon: Building2 },
-          { name: 'Audit Logs', path: '/admin/audit-logs', icon: ScrollText }
+          { name: 'OVERVIEW', path: '/admin/overview', icon: LayoutDashboard },
+          { name: 'GOVERNMENT OFFICERS', path: '/admin/government-officers', icon: UserCog },
+          { name: 'EXPERTS', path: '/admin/experts', icon: ShieldCheck },
+          { name: 'STARTUPS', path: '/admin/startups', icon: Rocket },
+          { name: 'DEPARTMENTS', path: '/admin/departments', icon: Building2 },
+          { name: 'AUDIT LOGS', path: '/admin/audit-logs', icon: ScrollText }
         ];
       case 'Government':
         return [
-          ...(authProfile?.is_admin ? [{ name: 'Platform Admin', path: '/admin/overview', icon: ShieldAlert }] : []),
-          { name: 'Overview', path: '/gov/overview', icon: LayoutDashboard },
-          { name: 'Challenges', path: '/gov/challenges', icon: Target },
-          { name: 'Applications & Evaluation', path: '/gov/applications', icon: FileCheck2 },
-          { name: 'Pilot & Validation', path: '/gov/pilots', icon: Zap },
-          { name: 'Procurement & Reports', path: '/gov/procurement', icon: CheckCircle2 }
+          ...(authProfile?.is_admin ? [{ name: 'PLATFORM ADMIN', path: '/admin/overview', icon: ShieldAlert }] : []),
+          { name: 'OVERVIEW', path: '/gov/overview', icon: LayoutDashboard },
+          { name: 'CHALLENGES', path: '/gov/challenges', icon: Flag, count: challenges?.length },
+          { name: 'APPLICATIONS & EVALUATION', path: '/gov/applications', icon: FileText, count: applications?.length },
+          { name: 'PILOTS & VALIDATION', path: '/gov/pilots', icon: Zap, count: pilots?.length },
+          { name: 'PROCUREMENT & REPORTS', path: '/gov/procurement', icon: Scale, count: procurementRecords?.length }
         ];
       case 'Startup':
         return [
-          { name: 'Overview', path: '/startup/overview', icon: LayoutDashboard },
-          { name: 'Challenges', path: '/startup/challenges', icon: Target },
-          { name: 'My Pilot', path: '/startup/pilot', icon: Zap },
-          { name: 'Payments & Status', path: '/startup/payments', icon: CreditCard }
+          { name: 'OVERVIEW', path: '/startup/overview', icon: LayoutDashboard },
+          { name: 'CHALLENGES', path: '/startup/challenges', icon: Flag, count: challenges?.length },
+          { name: 'MY PILOT', path: '/startup/pilot', icon: Zap, count: pilots?.length },
+          { name: 'PAYMENTS & STATUS', path: '/startup/payments', icon: CreditCard }
         ];
       case 'Expert':
         return [
-          { name: 'Overview', path: '/expert/overview', icon: LayoutDashboard },
-          { name: 'Evaluation', path: '/expert/evaluation', icon: ClipboardList },
-          { name: 'Pilot Validation', path: '/expert/validation', icon: ShieldCheck }
+          { name: 'OVERVIEW', path: '/expert/overview', icon: LayoutDashboard },
+          { name: 'EVALUATION', path: '/expert/evaluation', icon: ClipboardList, count: applications?.length },
+          { name: 'PILOT VALIDATION', path: '/expert/validation', icon: ShieldCheck, count: pilots?.length }
         ];
       default:
         return [];
@@ -77,130 +75,110 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen shrink-0 border-r border-slate-800 shadow-md">
+    <aside className="w-72 bg-[#ffffff] text-[#0d1c2e] flex flex-col h-screen shrink-0 border-r border-[#e2e8f0] shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 justify-between overflow-y-auto">
       {/* Top Brand Identity */}
-      <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-md bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0 border border-blue-400/30">
-          <Shield className="w-5 h-5 text-white" />
+      <div className="flex flex-col">
+        <div className="px-4 py-3 flex items-center gap-2.5 bg-[#eff4ff] border-b border-[#e2e8f0]">
+          <div className="w-8 h-8 rounded bg-[#0f2942] flex items-center justify-center text-white shrink-0 shadow-xs">
+            <Shield className="w-4 h-4 text-[#89f5e7]" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-bold text-[#001428] leading-tight">
+              SolutionBridge
+            </span>
+            <span className="text-[10px] font-semibold text-[#43474d] uppercase tracking-wider leading-tight">
+              National Innovation Procurement Portal
+            </span>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="font-bold text-sm leading-tight text-white tracking-wide truncate">
-            SolutionBridge
-          </h1>
-          <span className="text-[10px] text-blue-300 font-medium tracking-wide truncate block">
-            From Problems to Proven Solution
-          </span>
-        </div>
-      </div>
 
-      {/* Role Context Ribbon */}
-      <div className="px-4 py-3 bg-slate-950/80 border-b border-slate-800/80">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-            Active Portal
-          </span>
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-900/60 text-blue-200 border border-blue-700/50">
-            {currentRole}
-          </span>
-        </div>
-        <p className="text-xs font-semibold text-slate-200 truncate mt-1">
-          {currentUser.name}
-        </p>
-        <p className="text-[11px] text-slate-400 truncate">
-          {currentUser.designation || currentUser.department || currentUser.startupName}
-        </p>
-      </div>
+        {/* Navigation Menu */}
+        <nav className="flex flex-col py-2 px-1.5 gap-0.5">
+          {navItems.map((item, idx) => {
+            const Icon = item.icon;
+            const isActive = location.pathname.startsWith(item.path);
 
-      {/* Strict Role Navigation Menu */}
-      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-2">
-        Main Navigation ({navItems.length})
-      </div>
-      <nav className="flex-1 overflow-y-auto px-3 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname.startsWith(item.path);
-
-          return (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-medium transition-all ${
-                isActive
-                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Icon
-                className={`w-4 h-4 shrink-0 ${
-                  isActive ? 'text-white' : 'text-slate-400'
+            return (
+              <NavLink
+                key={`${item.name}-${idx}`}
+                to={item.path}
+                className={`flex items-center justify-between px-3 py-2 rounded-md transition-colors text-xs ${
+                  isActive
+                    ? 'bg-[#0f2942] text-white font-medium border-l-4 border-[#045eb2]'
+                    : 'text-[#43474d] hover:bg-[#dce9ff]/60 hover:text-[#0d1c2e]'
                 }`}
-              />
-              <span className="truncate">{item.name}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Quick Role Switcher for SIH Presentation */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-          SIH Prototype Role Switch
-        </span>
-        <div className="grid grid-cols-3 gap-1">
-          <button
-            onClick={() => {
-              setCurrentRole('Government');
-              navigate('/gov/overview');
-            }}
-            className={`px-1.5 py-1 rounded text-[10px] font-medium text-center transition-colors cursor-pointer ${
-              currentRole === 'Government'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-            title="Switch to Government Portal"
-          >
-            Govt
-          </button>
-          <button
-            onClick={() => {
-              setCurrentRole('Startup');
-              navigate('/startup/overview');
-            }}
-            className={`px-1.5 py-1 rounded text-[10px] font-medium text-center transition-colors cursor-pointer ${
-              currentRole === 'Startup'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-            title="Switch to Startup Portal"
-          >
-            Startup
-          </button>
-          <button
-            onClick={() => {
-              setCurrentRole('Expert');
-              navigate('/expert/overview');
-            }}
-            className={`px-1.5 py-1 rounded text-[10px] font-medium text-center transition-colors cursor-pointer ${
-              currentRole === 'Expert'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-            title="Switch to Expert Portal"
-          >
-            Expert
-          </button>
-        </div>
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${
+                      isActive ? 'text-[#67a4fd]' : 'text-[#74777e]'
+                    }`}
+                  />
+                  <span className="text-[12px] font-medium tracking-wide">{item.name}</span>
+                </div>
+                {item.count !== undefined && item.count !== null && item.count > 0 && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums ${
+                      isActive
+                        ? 'bg-[#003971] text-[#d5e3ff]'
+                        : 'bg-[#d5e3fc] text-[#003971]'
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Logout / Exit */}
-      <div className="p-3 border-t border-slate-800 bg-slate-900">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-rose-400 transition-colors cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Exit / Return to Login</span>
-        </button>
+      {/* Bottom Profile, Settings & Role Switcher */}
+      <div className="flex flex-col bg-[#eff4ff] border-t border-[#e2e8f0]">
+        {/* Settings and Help */}
+        <div className="flex flex-col py-1.5 px-1.5 gap-0.5">
+          <button
+            onClick={() => {}}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-[#43474d] hover:bg-[#dce9ff]/60 hover:text-[#0d1c2e] transition-colors text-left cursor-pointer"
+          >
+            <Settings className="w-3.5 h-3.5 text-[#74777e]" />
+            <span className="text-[12px]">Settings</span>
+          </button>
+          <button
+            onClick={() => {}}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-[#43474d] hover:bg-[#dce9ff]/60 hover:text-[#0d1c2e] transition-colors text-left cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#74777e]" />
+            <span className="text-[12px]">Help & Support</span>
+          </button>
+        </div>
+
+        {/* User profile footer card */}
+        <div className="px-3.5 py-2.5 bg-[#e6eeff] flex items-center justify-between gap-2 border-t border-[#e2e8f0]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#0f2942] text-white font-bold text-xs flex items-center justify-center shrink-0 border border-[#7991af]/40">
+              {currentUser?.name?.charAt(0) || 'U'}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[12px] font-bold text-[#0d1c2e] truncate">
+                {currentUser?.name || 'Officer'}
+              </span>
+              <span className="text-[10px] text-[#43474d] truncate">
+                {currentUser?.designation || currentUser?.department || currentUser?.role || 'Procurement Authority'}
+              </span>
+              <span className="text-[9px] font-semibold text-[#74777e] truncate uppercase">
+                {currentUser?.department || 'Govt of India'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Logout"
+            className="p-1.5 text-[#74777e] hover:text-[#ba1a1a] rounded hover:bg-[#dce9ff] transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </aside>
   );

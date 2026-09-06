@@ -9,6 +9,7 @@ import AdminRoute from './AdminRoute';
 // Government Pages (5 Strict Divisions)
 import GovOverview from '../pages/Government/GovOverview';
 import GovChallenges from '../pages/Government/GovChallenges';
+import GovChallengeDetail from '../pages/Government/GovChallengeDetail';
 import GovApplications from '../pages/Government/GovApplications';
 import GovPilots from '../pages/Government/GovPilots';
 import GovProcurement from '../pages/Government/GovProcurement';
@@ -59,6 +60,7 @@ const AppRoutes = () => {
           <Route path="/gov/overview" element={<GovOverview />} />
           <Route path="/gov/dashboard" element={<Navigate to="/gov/overview" replace />} />
           <Route path="/gov/challenges" element={<GovChallenges />} />
+          <Route path="/gov/challenges/:id" element={<GovChallengeDetail />} />
           <Route path="/gov/applications" element={<GovApplications />} />
           <Route path="/gov/pilots" element={<GovPilots />} />
           <Route path="/gov/procurement" element={<GovProcurement />} />
@@ -80,6 +82,7 @@ const AppRoutes = () => {
           <Route path="/startup/overview" element={<StartupOverview />} />
           <Route path="/startup/dashboard" element={<Navigate to="/startup/overview" replace />} />
           <Route path="/startup/challenges" element={<StartupChallenges />} />
+          <Route path="/startup/challenges/:id" element={<GovChallengeDetail />} />
           <Route path="/startup/pilot" element={<StartupPilot />} />
           <Route path="/startup/my-pilot" element={<Navigate to="/startup/pilot" replace />} />
           <Route path="/startup/pilots" element={<Navigate to="/startup/pilot" replace />} />

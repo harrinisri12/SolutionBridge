@@ -83,7 +83,7 @@ export const StatCard = ({
       <div className={`absolute top-0 left-0 right-0 h-1 ${colorMap.bar}`} />
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0 pr-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 line-clamp-2 leading-snug">
             {title}
           </p>
           <h4 className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">

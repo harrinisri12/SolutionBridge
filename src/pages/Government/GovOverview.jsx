@@ -19,7 +19,6 @@ import { StatCard } from '../../components/Common/Card';
 import ChartCard from '../../components/Common/ChartCard';
 import Badge from '../../components/Common/Badge';
 import Button from '../../components/Common/Button';
-import LifecycleStepper from '../../components/Common/LifecycleStepper';
 
 const GovOverview = () => {
   const { challenges, applications, pilots, procurementRecords, recentActivities } = useApp();
@@ -126,9 +125,6 @@ const GovOverview = () => {
           </Button>
         </div>
       </div>
-
-      {/* Lifecycle Stepper */}
-      <LifecycleStepper activeStage={0} />
 
       {/* Exactly 5 Main Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

@@ -19,6 +19,7 @@ import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import EmptyState from '../../components/Common/EmptyState';
+import GovChallengeDetail from '../Government/GovChallengeDetail';
 
 const CATEGORY_CHIPS = [
   'All',
@@ -105,6 +106,15 @@ const StartupChallenges = () => {
 
     return matchesSearch && matchesCategory && matchesDept;
   });
+
+  if (viewChallenge) {
+    return (
+      <GovChallengeDetail
+        challenge={viewChallenge}
+        onBack={() => setViewChallenge(null)}
+      />
+    );
+  }
 
   // Check if startup already applied
   const getApplicationStatus = (challengeId) => {
@@ -270,130 +280,6 @@ const StartupChallenges = () => {
             );
           })}
         </div>
-      )}
-
-      {/* CHALLENGE DETAILS MODAL */}
-      {viewChallenge && (
-        <Modal
-          isOpen={!!viewChallenge}
-          onClose={() => setViewChallenge(null)}
-          title={viewChallenge.title}
-          subtitle={`${viewChallenge.id} • ${viewChallenge.department}`}
-          maxWidth="max-w-3xl"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <Button
-                variant="outline"
-                onClick={() => setViewChallenge(null)}
-              >
-                Close
-              </Button>
-
-              {getApplicationStatus(viewChallenge.id) ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-600">
-                    Application Status:
-                  </span>
-                  <Badge status={getApplicationStatus(viewChallenge.id)} size="sm" />
-                </div>
-              ) : (
-                <Button
-                  variant="secondary"
-                  icon={ArrowRight}
-                  iconPosition="right"
-                  onClick={() => {
-                    setApplyChallenge(viewChallenge);
-                  }}
-                >
-                  Apply for Challenge
-                </Button>
-              )}
-            </div>
-          }
-        >
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Category
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">
-                  {viewChallenge.category}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Deadline
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">
-                  {viewChallenge.deadline}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Sanctioned Pilot Budget
-                </span>
-                <span className="font-semibold text-emerald-800 text-sm">
-                  {viewChallenge.budget}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  Pilot Duration
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">
-                  {viewChallenge.pilotDuration || '6 Months'}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Problem Statement & Operational Bottlenecks
-              </h4>
-              <p className="text-slate-700 leading-relaxed bg-white p-3 rounded border border-slate-200">
-                {viewChallenge.problemDescription}
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Expected Solution & Deliverables
-              </h4>
-              <p className="text-slate-700 leading-relaxed bg-white p-3 rounded border border-slate-200">
-                {viewChallenge.expectedSolution || 'High-accuracy automated telemetry and diagnostic hardware/software.'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                  Eligibility Criteria
-                </h4>
-                <div className="bg-slate-50 p-3 rounded border border-slate-200 text-slate-700">
-                  {viewChallenge.eligibilityCriteria || 'DPIIT recognized startups with TRL-7 prototype.'}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                  Required Technology
-                </h4>
-                <div className="bg-slate-50 p-3 rounded border border-slate-200 text-slate-700">
-                  {viewChallenge.requiredTechnology || 'IoT, Edge AI, Telemetry, Cloud'}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Pilot Information & Scope
-              </h4>
-              <div className="bg-blue-50/60 p-3 rounded border border-blue-200 text-blue-900 leading-relaxed">
-                {viewChallenge.pilotRequirements || `Deployment in ${viewChallenge.location} for ${viewChallenge.pilotDuration}.`}
-              </div>
-            </div>
-          </div>
-        </Modal>
       )}
 
       {/* APPLICATION FORM MODAL */}

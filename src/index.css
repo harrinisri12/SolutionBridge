@@ -1,92 +1,178 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --color-surface: #f8f9ff;
+  --color-surface-dim: #ccdbf3;
+  --color-surface-bright: #f8f9ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e6eeff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d5e3fc;
+  --color-surface-variant: #d5e3fc;
+  
+  --color-on-surface: #0d1c2e;
+  --color-on-surface-variant: #43474d;
+  --color-inverse-surface: #233144;
+  --color-inverse-on-surface: #eaf1ff;
+  
+  --color-outline: #74777e;
+  --color-outline-variant: #c3c6ce;
+  --color-surface-tint: #49607c;
+  
+  --color-primary: #001428;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0f2942;
+  --color-on-primary-container: #7991af;
+  --color-inverse-primary: #b0c9e8;
+  --color-primary-fixed: #d1e4ff;
+  --color-primary-fixed-dim: #b0c9e8;
+  --color-on-primary-fixed: #011d35;
+  --color-on-primary-fixed-variant: #314863;
+  
+  --color-secondary: #045eb2;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #67a4fd;
+  --color-on-secondary-container: #003971;
+  --color-secondary-fixed: #d5e3ff;
+  --color-secondary-fixed-dim: #a8c8ff;
+  --color-on-secondary-fixed: #001b3c;
+  --color-on-secondary-fixed-variant: #004689;
+  
+  --color-tertiary: #001714;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #002e29;
+  --color-on-tertiary-container: #269f93;
+  --color-tertiary-fixed: #89f5e7;
+  --color-tertiary-fixed-dim: #6bd8cb;
+  --color-on-tertiary-fixed: #00201d;
+  --color-on-tertiary-fixed-variant: #005049;
+  
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  
+  --spacing-space-2xs: 0.125rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 0.75rem;
+  --spacing-space-base: 1rem;
+  --spacing-space-lg: 1.25rem;
+  --spacing-space-xl: 1.5rem;
+  --spacing-space-2xl: 2rem;
+  --spacing-gutter-desktop: 1.5rem;
+  --spacing-gutter-tablet: 1rem;
+  --spacing-gutter-mobile: 0.75rem;
+  --spacing-margin-desktop: 2rem;
+  --spacing-margin-mobile: 1rem;
+}
+
 @layer base {
   :root {
     --primary-gov: #0f2942;
-    --primary-gov-dark: #0a1b2d;
-    --primary-gov-light: #1a3e63;
-    --secondary-gov: #2563eb;
-    --secondary-gov-dark: #1d4ed8;
-    --bg-main: #f8fafc;
+    --primary-gov-dark: #001428;
+    --secondary-gov: #045eb2;
+    --tertiary-gov: #0d9488;
+    --bg-main: #f8f9ff;
     --bg-surface: #ffffff;
     --border-gov: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --success-gov: #059669;
-    --warning-gov: #d97706;
-    --danger-gov: #dc2626;
+    --text-primary: #0d1c2e;
+    --text-secondary: #43474d;
+    --text-muted: #74777e;
   }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f8f9ff;
+    color: #0d1c2e;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
     min-height: 100vh;
   }
 }
 
-/* Custom Government Portal Utilities */
-.gov-header-stripe {
-  background: linear-gradient(90deg, #ff9933 0%, #ffffff 50%, #138808 100%);
-  height: 4px;
+/* Tabular Numerics for Currencies, KPI metrics, Dates, and IDs */
+.tabular-nums, [data-tabular] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "cv05" 1, "zero" 1;
 }
 
+/* Sovereign Civic Modern Card Framework */
+.sov-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+}
+
+.sov-card-hover {
+  transition: all 0.15s ease-in-out;
+}
+.sov-card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px -1px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+}
+
+/* Backward compatibility helpers */
 .gov-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
 }
-
 .gov-card-hover {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.15s ease-in-out;
 }
 .gov-card-hover:hover {
   border-color: #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px -1px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
 }
 
-.gov-table th {
+.gov-header-stripe {
+  background: linear-gradient(90deg, #ff9933 0%, #ffffff 50%, #138808 100%);
+  height: 3px;
+}
+
+/* Table Utilities */
+.sov-table th, .gov-table th {
   background-color: #f8fafc;
-  color: #334155;
+  color: #475569;
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.sov-table td, .gov-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #e2e8f0;
+  color: #0d1c2e;
+  font-size: 0.8125rem;
 }
 
-.gov-table td {
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #1e293b;
-  font-size: 0.875rem;
-}
-
-.gov-table tr:hover td {
+.sov-table tr:hover td, .gov-table tr:hover td {
   background-color: #f8fafc;
 }
 
-/* Custom Scrollbars */
+/* Subtle Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #eff4ff;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c3c6ce;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #74777e;
 }

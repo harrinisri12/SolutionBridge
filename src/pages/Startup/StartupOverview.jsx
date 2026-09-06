@@ -18,7 +18,6 @@ import { StatCard } from '../../components/Common/Card';
 import ChartCard from '../../components/Common/ChartCard';
 import Badge from '../../components/Common/Badge';
 import Button from '../../components/Common/Button';
-import LifecycleStepper from '../../components/Common/LifecycleStepper';
 
 const StartupOverview = () => {
   const { applications, pilots, notifications, currentUser } = useApp();
@@ -93,9 +92,6 @@ const StartupOverview = () => {
           </Button>
         </div>
       </div>
-
-      {/* Lifecycle Stepper */}
-      <LifecycleStepper activeStage={4} />
 
       {/* 6 Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5">

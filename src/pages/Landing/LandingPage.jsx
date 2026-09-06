@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import heroIllustration from '../../assets/hero-illustration.png';
 import {
   Shield,
   Building2,
@@ -50,28 +51,6 @@ const LandingPage = () => {
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs">
         {/* Tricolor National Stripe */}
         <div className="gov-header-stripe" />
-
-        {/* Top Institutional Identity Bar */}
-        <div className="bg-slate-900 text-slate-300 text-xs py-1 px-4 sm:px-8 border-b border-slate-800">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 font-medium tracking-wide">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>National Innovation Procurement Sandbox & Marketplace</span>
-              <span className="hidden md:inline text-slate-600">|</span>
-              <span className="hidden md:inline text-slate-400">DPIIT & Public Sector Innovation Mission</span>
-            </div>
-            <div className="flex items-center gap-4 text-[11px] text-slate-400">
-              <span className="hidden sm:inline">GovCloud Secure Gateway</span>
-              <button
-                onClick={() => navigate('/login')}
-                className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <Lock className="w-3 h-3" />
-                Officer & Evaluator Portal
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* Main Branding & Navigation Header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
@@ -270,141 +249,25 @@ const LandingPage = () => {
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
-
-              {/* Key Highlights Metrics */}
-              <div className="pt-4 grid grid-cols-3 gap-4 border-t border-slate-200 max-w-lg">
-                <div>
-                  <div className="text-lg sm:text-xl font-extrabold text-slate-900">100%</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Evidence-Based</div>
-                </div>
-                <div>
-                  <div className="text-lg sm:text-xl font-extrabold text-slate-900">TRL 7+</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Field Prototypes</div>
-                </div>
-                <div>
-                  <div className="text-lg sm:text-xl font-extrabold text-slate-900">Direct</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Procurement Path</div>
-                </div>
-              </div>
             </div>
 
-            {/* Hero Visual Architecture Flowchart (Right 5 Cols) */}
-            <div className="lg:col-span-5">
-              <div className="gov-card p-5 sm:p-6 bg-slate-900 text-slate-100 rounded-lg border border-slate-800 shadow-md">
+            {/* Hero Image / Innovation Sandbox Graphic (Hidden on small/medium screens to prevent moving down, scales dynamically on desktop) */}
+            <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative">
+              <div className="relative w-full max-w-md xl:max-w-lg mx-auto transition-all duration-300">
+                {/* Subtle ambient backdrop glow */}
+                <div className="absolute -inset-2 bg-gradient-to-tr from-blue-500/20 via-indigo-500/15 to-transparent rounded-2xl blur-xl -z-10 pointer-events-none" />
                 
-                {/* Visual Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-blue-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      Innovation Lifecycle Engine
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50">
-                    6-Stage Pipeline
-                  </span>
+                {/* Image Container with clean border & shadow */}
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-lg p-2 group hover:shadow-xl transition-all duration-300">
+                  <img
+                    src={heroIllustration}
+                    alt="GovTech Innovation Ecosystem & Digital Sandbox Platform"
+                    className="w-full h-auto object-contain rounded-xl transition-transform duration-500 group-hover:scale-[1.01]"
+                    loading="eager"
+                  />
                 </div>
-
-                {/* Abstract Connected Pipeline Steps */}
-                <div className="mt-4 space-y-2.5">
-                  
-                  {/* Step 1 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/80 border border-slate-700/60">
-                    <div className="w-7 h-7 rounded bg-blue-600/30 border border-blue-500/40 text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
-                      <Target className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">01. Government Problem</div>
-                      <div className="text-[10px] text-slate-400 truncate">Department defines operational KPIs & budget bounds</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-blue-300 bg-blue-950 px-1.5 py-0.5 rounded">Defined</span>
-                  </div>
-
-                  {/* Connecting vector */}
-                  <div className="w-px h-2 bg-slate-700 ml-6" />
-
-                  {/* Step 2 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/80 border border-slate-700/60">
-                    <div className="w-7 h-7 rounded bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
-                      <Rocket className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">02. Startup Solution</div>
-                      <div className="text-[10px] text-slate-400 truncate">DPIIT startups submit technical DPR & prototype logs</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-emerald-300 bg-emerald-950 px-1.5 py-0.5 rounded">Screened</span>
-                  </div>
-
-                  {/* Connecting vector */}
-                  <div className="w-px h-2 bg-slate-700 ml-6" />
-
-                  {/* Step 3 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/80 border border-slate-700/60">
-                    <div className="w-7 h-7 rounded bg-purple-600/30 border border-purple-500/40 text-purple-300 flex items-center justify-center font-bold text-xs shrink-0">
-                      <Award className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">03. Expert Evaluation</div>
-                      <div className="text-[10px] text-slate-400 truncate">Domain specialists evaluate on 5-factor scorecard</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-purple-300 bg-purple-950 px-1.5 py-0.5 rounded">Scored</span>
-                  </div>
-
-                  {/* Connecting vector */}
-                  <div className="w-px h-2 bg-slate-700 ml-6" />
-
-                  {/* Step 4 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/80 border border-slate-700/60">
-                    <div className="w-7 h-7 rounded bg-amber-600/30 border border-amber-500/40 text-amber-300 flex items-center justify-center font-bold text-xs shrink-0">
-                      <Zap className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">04. Controlled Pilot</div>
-                      <div className="text-[10px] text-slate-400 truncate">Real-world trials with telemetry & evidence capture</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-amber-300 bg-amber-950 px-1.5 py-0.5 rounded">Telemetry</span>
-                  </div>
-
-                  {/* Connecting vector */}
-                  <div className="w-px h-2 bg-slate-700 ml-6" />
-
-                  {/* Step 5 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/80 border border-slate-700/60">
-                    <div className="w-7 h-7 rounded bg-teal-600/30 border border-teal-500/40 text-teal-300 flex items-center justify-center font-bold text-xs shrink-0">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">05. Independent Validation</div>
-                      <div className="text-[10px] text-slate-400 truncate">Baseline vs actual outcome verification audit</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-teal-300 bg-teal-950 px-1.5 py-0.5 rounded">Audited</span>
-                  </div>
-
-                  {/* Connecting vector */}
-                  <div className="w-px h-2 bg-slate-700 ml-6" />
-
-                  {/* Step 6 */}
-                  <div className="flex items-center gap-3 p-2.5 rounded bg-slate-800/90 border border-emerald-600/50">
-                    <div className="w-7 h-7 rounded bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-emerald-300 truncate">06. Procurement & Scale-up</div>
-                      <div className="text-[10px] text-slate-300 truncate">Direct Procurement Order (DPO) & milestone release</div>
-                    </div>
-                    <span className="text-[9px] font-bold text-white bg-emerald-700 px-1.5 py-0.5 rounded">DPO Issued</span>
-                  </div>
-
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
-                  <span>Standardized Public Innovation Protocol</span>
-                  <span className="text-blue-400 font-semibold">Tender Exemption Ready</span>
-                </div>
-
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -463,116 +326,6 @@ const LandingPage = () => {
               <div className="min-w-0">
                 <div className="text-xs font-bold text-slate-900 truncate">Evidence-Based Procurement</div>
                 <div className="text-[11px] text-slate-500 truncate">Verified Performance Audits</div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 4. THE PROBLEM SECTION */}
-      {/* ========================================================================= */}
-      <section id="about" className="py-14 sm:py-18 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded">
-              <Scale className="w-3.5 h-3.5" />
-              <span>Addressing the Public Procurement Gap</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
-              Government Problems Need Proven Solutions
-            </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Government departments face complex operational and technology challenges, while innovative startups have breakthrough solutions but lack a structured, risk-mitigated pathway to public sector deployment.
-            </p>
-          </div>
-
-          {/* Two Balanced Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            
-            {/* Column 1: Government Needs */}
-            <div className="gov-card p-6 sm:p-8 bg-slate-50/70 border border-slate-200 rounded-lg flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 pb-4 border-b border-slate-200 mb-5">
-                  <div className="w-9 h-9 rounded bg-slate-900 text-white flex items-center justify-center font-bold">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Government Needs</h3>
-                    <p className="text-xs text-slate-500">Public administration & infrastructure demands</p>
-                  </div>
-                </div>
-
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-700">
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span><strong>Real-World Problem Identification:</strong> Clear articulation of public pain points.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span><strong>Technical Requirements & KPIs:</strong> Predefined operational benchmarks.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span><strong>Measurable Milestones:</strong> Phased execution with verifiable deliverables.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span><strong>Sandboxed Pilot Deployment:</strong> Controlled trials to mitigate fiscal risk.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span><strong>Transparent Evaluation:</strong> Objective scorecards free from subjective bias.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
-                SolutionBridge provides the regulatory sandboxing needed to test before large-scale purchase.
-              </div>
-            </div>
-
-            {/* Column 2: Startup Capabilities */}
-            <div className="gov-card p-6 sm:p-8 bg-blue-50/40 border border-blue-200/80 rounded-lg flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 pb-4 border-b border-blue-200/80 mb-5">
-                  <div className="w-9 h-9 rounded bg-blue-700 text-white flex items-center justify-center font-bold">
-                    <Rocket className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Startup Capabilities</h3>
-                    <p className="text-xs text-slate-500">Deep-tech innovation & agile deployment</p>
-                  </div>
-                </div>
-
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-700">
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Innovative Deep-Tech:</strong> Breakthrough AI, IoT, robotics, and clean-tech solutions.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Domain Expertise & Agility:</strong> Specialized technical knowledge and rapid adaptation.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Rapid Prototyping:</strong> Fast iterations tailored to specific department constraints.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Field Deployment Readiness:</strong> TRL-7+ mature systems ready for live operational trials.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Scalable Architecture:</strong> High-efficiency solutions built for statewide scale.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-blue-200 text-xs text-slate-500">
-                Startups receive a legitimate, merit-based entry into public sector contracts.
               </div>
             </div>
 
@@ -945,165 +698,7 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 8. EVIDENCE-BASED PILOT SECTION */}
-      {/* ========================================================================= */}
-      <section id="pilots" className="py-14 sm:py-18 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            
-            {/* Left Narrative */}
-            <div className="lg:col-span-5 space-y-4">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Empirical Verification</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
-                Test. Measure. Validate.
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                Selected startups demonstrate their solutions through controlled pilot deployments. Baseline performance, target KPIs, telemetry, milestones, and evidence are tracked throughout the pilot.
-              </p>
-              <div className="space-y-2.5 pt-2 text-xs text-slate-700">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>No procurement decision on slide presentations alone</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Real field telemetry captured from municipal sensors</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Pre-trial baseline vs post-pilot actual outcome benchmarking</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right KPI Visualization Matrix */}
-            <div className="lg:col-span-7">
-              <div className="gov-card p-5 sm:p-6 bg-slate-900 text-white rounded-lg border border-slate-800 shadow-md">
-                
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block">
-                      Sample Sandbox KPI Matrix
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      Empirical verification comparison table
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    Audit Status: VALIDATED
-                  </span>
-                </div>
-
-                {/* KPI Comparison Rows */}
-                <div className="mt-4 space-y-3">
-                  
-                  {/* Metric 1 */}
-                  <div className="bg-slate-800/80 p-3 rounded-md border border-slate-700/60">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                      <span className="text-slate-200">Response Time / Detection Latency</span>
-                      <span className="text-emerald-400 font-mono text-[11px]">8.5 min (Target: &lt;15 min)</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-mono">
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-slate-500">Baseline</span>
-                        <span className="text-slate-300 font-bold">48 Hours</span>
-                      </div>
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-blue-400">Target Benchmark</span>
-                        <span className="text-blue-300 font-bold">15.0 Minutes</span>
-                      </div>
-                      <div className="bg-emerald-950/60 border border-emerald-700/40 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-emerald-400 font-bold">Actual Validated</span>
-                        <span className="text-emerald-300 font-bold">8.5 Minutes</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Metric 2 */}
-                  <div className="bg-slate-800/80 p-3 rounded-md border border-slate-700/60">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                      <span className="text-slate-200">System Telemetry Uptime</span>
-                      <span className="text-emerald-400 font-mono text-[11px]">99.6% (Target: &gt;99.0%)</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-mono">
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-slate-500">Baseline</span>
-                        <span className="text-slate-300 font-bold">75.0%</span>
-                      </div>
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-blue-400">Target Benchmark</span>
-                        <span className="text-blue-300 font-bold">99.0%</span>
-                      </div>
-                      <div className="bg-emerald-950/60 border border-emerald-700/40 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-emerald-400 font-bold">Actual Validated</span>
-                        <span className="text-emerald-300 font-bold">99.6%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Metric 3 */}
-                  <div className="bg-slate-800/80 p-3 rounded-md border border-slate-700/60">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                      <span className="text-slate-200">Operational Accuracy vs NABL Lab</span>
-                      <span className="text-emerald-400 font-mono text-[11px]">94.2% (Target: &gt;90.0%)</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-mono">
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-slate-500">Baseline</span>
-                        <span className="text-slate-300 font-bold">60.0%</span>
-                      </div>
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-blue-400">Target Benchmark</span>
-                        <span className="text-blue-300 font-bold">90.0%</span>
-                      </div>
-                      <div className="bg-emerald-950/60 border border-emerald-700/40 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-emerald-400 font-bold">Actual Validated</span>
-                        <span className="text-emerald-300 font-bold">94.2%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Metric 4 */}
-                  <div className="bg-slate-800/80 p-3 rounded-md border border-slate-700/60">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                      <span className="text-slate-200">Manual Testing Cost Reduction</span>
-                      <span className="text-emerald-400 font-mono text-[11px]">38.5% (Target: &gt;30.0%)</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-mono">
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-slate-500">Baseline</span>
-                        <span className="text-slate-300 font-bold">0.0%</span>
-                      </div>
-                      <div className="bg-slate-900 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-blue-400">Target Benchmark</span>
-                        <span className="text-blue-300 font-bold">30.0%</span>
-                      </div>
-                      <div className="bg-emerald-950/60 border border-emerald-700/40 p-1.5 rounded">
-                        <span className="block text-[9px] uppercase text-emerald-400 font-bold">Actual Validated</span>
-                        <span className="text-emerald-300 font-bold">38.5%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-slate-800 text-[10px] text-slate-400">
-                  *Illustrative sandbox evaluation model verifying compliance prior to Direct Procurement.
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 9. TRANSPARENCY SECTION */}
+      {/* 8. TRANSPARENCY SECTION */}
       {/* ========================================================================= */}
       <section id="transparency" className="py-14 sm:py-18 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -1177,63 +772,7 @@ const LandingPage = () => {
                   Complete audit log from problem submission to milestone disbursement under public financial norms.
                 </p>
               </div>
-
             </div>
-
-            {/* Audit Log / Verification Visual (5 Cols) */}
-            <div className="lg:col-span-5">
-              <div className="gov-card p-5 bg-white border border-slate-300 rounded-lg shadow-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-blue-700" />
-                    <span className="text-xs font-bold text-slate-900">Audit & Compliance Trail</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                    Verifiable Record
-                  </span>
-                </div>
-
-                <div className="mt-3 space-y-2 text-xs font-mono text-slate-700">
-                  <div className="p-2 bg-slate-50 rounded border border-slate-200 flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-slate-900">Challenge CH-2026-001 Sanctioned</span>
-                      <p className="text-[10px] text-slate-500 font-sans">Water Resources Dept • Budget ₹85,00,000</p>
-                    </div>
-                  </div>
-
-                  <div className="p-2 bg-slate-50 rounded border border-slate-200 flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-slate-900">Proposal Evaluated (Score: 8.84/10)</span>
-                      <p className="text-[10px] text-slate-500 font-sans">Evaluated by Dr. Ramesh Chandra (IIT Delhi Panel)</p>
-                    </div>
-                  </div>
-
-                  <div className="p-2 bg-slate-50 rounded border border-slate-200 flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-slate-900">Field Pilot Sign-off (KPIs 100% Passed)</span>
-                      <p className="text-[10px] text-slate-500 font-sans">NABL Lab Assays & Telemetry Log Verified</p>
-                    </div>
-                  </div>
-
-                  <div className="p-2 bg-emerald-50/70 rounded border border-emerald-300 flex items-start gap-2">
-                    <FileCheck2 className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-emerald-950">Direct Procurement Order DPO Issued</span>
-                      <p className="text-[10px] text-emerald-800 font-sans">Tender Exemption S.O. 4522 • Treasury Disbursed</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] text-slate-500 flex items-center justify-between">
-                  <span>Cryptographic Seal Active</span>
-                  <span className="text-slate-700 font-semibold">NIC / GovCloud Audit Node</span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </section>

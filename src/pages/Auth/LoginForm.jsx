@@ -28,7 +28,6 @@ const LoginForm = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -549,29 +548,6 @@ const LoginForm = ({
             {passwordError}
           </p>
         )}
-      </div>
-
-      {/* Remember Me */}
-      <div className="flex items-center justify-between text-xs pt-0.5">
-
-        <label className="flex items-center gap-2 text-[#43474d] cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) =>
-              setRememberMe(e.target.checked)
-            }
-            className="w-4 h-4 rounded border-[#cbd5e1] text-[#045eb2] focus:ring-[#045eb2] focus:ring-offset-0"
-          />
-
-          <span className="text-xs font-medium">
-            Remember me on this device
-          </span>
-        </label>
-
-        <span className="text-[10px] text-[#8993a4] font-mono">
-          TLS 1.3 Secure
-        </span>
       </div>
 
       {/* Submit */}

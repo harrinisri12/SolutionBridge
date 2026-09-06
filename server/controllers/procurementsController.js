@@ -140,10 +140,16 @@ export const createProcurement = async (req, res) => {
     const {
       pilot_id,
       procurement_order,
+      order_number,
       tender_exemption_certificate,
       total_amount,
-      milestones = []
+      milestones = [],
+      payment_schedule = []
     } = req.body;
+
+    const finalMilestones = (Array.isArray(milestones) && milestones.length > 0)
+      ? milestones
+      : (Array.isArray(payment_schedule) ? payment_schedule : []);
 
     if (!pilot_id || !total_amount) {
       return ApiResponse.error(res, 'pilot_id and total_amount are required', 422, 'VALIDATION_ERROR');
@@ -170,7 +176,7 @@ export const createProcurement = async (req, res) => {
     }
 
     // Generate unique procurement order number if not supplied
-    const orderNumber = procurement_order || `PO-SB-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderNumber = procurement_order || order_number || `PO-SB-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
     // 2. Insert Procurement
     const { data: procurement, error: createError } = await supabaseAdmin
@@ -196,8 +202,8 @@ export const createProcurement = async (req, res) => {
     }
 
     // 3. Create initial payment milestones if provided
-    if (Array.isArray(milestones) && milestones.length > 0) {
-      const paymentRows = milestones.map(m => ({
+    if (Array.isArray(finalMilestones) && finalMilestones.length > 0) {
+      const paymentRows = finalMilestones.map(m => ({
         procurement_id: procurement.id,
         milestone_name: m.milestone_name || m.name,
         amount: Number(m.amount),

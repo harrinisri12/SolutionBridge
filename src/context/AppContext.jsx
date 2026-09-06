@@ -467,14 +467,48 @@ export const AppProvider = ({ children }) => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
+  // Challenge Permission Check Helper
+  const canManageChallenge = useCallback((ch, user = currentUser) => {
+    if (!user || !ch) return false;
+    if (user.isAdmin || user.role === 'Admin') return true;
+    if (user.role !== 'Government' && user.role !== 'government') return false;
+
+    // Check matching department ID
+    const uDeptId = user.departmentId || user.department_id;
+    const chDeptId = ch.departmentId || ch.department_id;
+    if (uDeptId && chDeptId && String(uDeptId) === String(chDeptId)) {
+      return true;
+    }
+
+    // Check matching department name (ignoring case, spaces, and punctuation)
+    const uDeptName = (user.department || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const chDeptName = (ch.department || ch.government_departments?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (uDeptName && chDeptName) {
+      if (uDeptName === chDeptName || uDeptName.includes(chDeptName) || chDeptName.includes(uDeptName)) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [currentUser]);
+
   // 1. Challenge Handlers
   const publishChallenge = async (challengeData, isDraft = false) => {
     try {
+      let deptId = challengeData.departmentId || challengeData.department_id;
+      if (!deptId && challengeData.department) {
+        const found = departments.find(d => d.name === challengeData.department || d.id === challengeData.department);
+        if (found) deptId = found.id;
+      }
+      if (!deptId && currentUser.departmentId) {
+        deptId = currentUser.departmentId;
+      }
+
       const response = await challengeService.createChallenge({
         title: challengeData.title,
         problem_statement: challengeData.problemStatement || challengeData.problemDescription || challengeData.description,
         category: challengeData.category,
-        department_id: challengeData.departmentId || challengeData.department_id,
+        department_id: deptId,
         technical_requirements: challengeData.technicalRequirements,
         pilot_guidelines: challengeData.pilotGuidelines,
         status: isDraft ? 'draft' : 'published'
@@ -491,6 +525,57 @@ export const AppProvider = ({ children }) => {
       return savedChallenge;
     } catch (err) {
       addToast(err.message || "Failed to create challenge", "error");
+      throw err;
+    }
+  };
+
+  const updateChallenge = async (id, updateData) => {
+    try {
+      const response = await challengeService.updateChallenge(id, {
+        title: updateData.title,
+        problem_statement: updateData.problemStatement || updateData.problemDescription,
+        category: updateData.category,
+        technical_requirements: updateData.technicalRequirements,
+        pilot_guidelines: updateData.pilotGuidelines,
+        status: updateData.status ? updateData.status.toLowerCase() : undefined
+      });
+
+      const updated = response?.data?.challenge ? normalizeChallenge(response.data.challenge) : null;
+      if (updated) {
+        setChallenges(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+      }
+
+      addToast("Problem statement updated successfully", "success");
+      refreshData();
+      return updated;
+    } catch (err) {
+      addToast(err.message || "Failed to update challenge", "error");
+      throw err;
+    }
+  };
+
+  const deleteChallenge = async (id) => {
+    try {
+      await challengeService.deleteChallenge(id);
+      setChallenges(prev => prev.filter(c => c.id !== id));
+      addToast("Challenge removed successfully", "success");
+      refreshData();
+      return true;
+    } catch (err) {
+      addToast(err.message || "Failed to delete challenge", "error");
+      throw err;
+    }
+  };
+
+  const closeChallenge = async (id) => {
+    try {
+      await challengeService.closeChallenge(id);
+      setChallenges(prev => prev.map(c => c.id === id ? { ...c, status: 'Closed', rawStatus: 'closed' } : c));
+      addToast("Challenge marked as closed", "info");
+      refreshData();
+      return true;
+    } catch (err) {
+      addToast(err.message || "Failed to close challenge", "error");
       throw err;
     }
   };
@@ -701,6 +786,10 @@ export const AppProvider = ({ children }) => {
       setCurrentRole,
       addToast,
       publishChallenge,
+      updateChallenge,
+      deleteChallenge,
+      closeChallenge,
+      canManageChallenge,
       submitApplication,
       updateApplicationStatus,
       submitExpertEvaluation,

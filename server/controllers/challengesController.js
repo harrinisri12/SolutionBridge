@@ -145,7 +145,10 @@ export const createChallenge = async (req, res) => {
       );
     }
 
-    let targetDept = department_id || userDept;
+    let targetDept = userDept || department_id;
+    if (!req.user.is_admin && userDept) {
+      targetDept = userDept;
+    }
     if (!targetDept) {
       const { data: defaultDept } = await supabaseAdmin
         .from('government_departments')
@@ -249,13 +252,41 @@ export const updateChallenge = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const userDept = req.user.department_id;
+    const isAdmin = Boolean(req.user.is_admin);
+
+    // Verify existing challenge & department ownership
+    const { data: existingChallenge, error: fetchErr } = await supabaseAdmin
+      .from('challenges')
+      .select('*, government_departments(name)')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existingChallenge) {
+      return ApiResponse.error(
+        res,
+        'Challenge not found',
+        404,
+        'NOT_FOUND'
+      );
+    }
+
+    if (!isAdmin && userDept && existingChallenge.department_id && existingChallenge.department_id !== userDept) {
+      return ApiResponse.error(
+        res,
+        `You can only edit problem statements for your assigned department (${existingChallenge.government_departments?.name || 'Other Department'}).`,
+        403,
+        'FORBIDDEN'
+      );
+    }
 
     const {
       title,
       problem_statement,
       category,
       technical_requirements,
-      pilot_guidelines
+      pilot_guidelines,
+      status
     } = req.body;
 
     const updates = {};
@@ -271,12 +302,15 @@ export const updateChallenge = async (req, res) => {
     if (pilot_guidelines !== undefined) {
       updates.pilot_guidelines = pilot_guidelines;
     }
+    if (status) {
+      updates.status = status.toLowerCase();
+    }
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('*, government_departments(name)')
       .single();
 
     if (error || !challenge) {
@@ -320,6 +354,23 @@ export const updateChallenge = async (req, res) => {
 export const publishChallenge = async (req, res) => {
   try {
     const { id } = req.params;
+    const userDept = req.user.department_id;
+    const isAdmin = Boolean(req.user.is_admin);
+
+    const { data: existingChallenge } = await supabaseAdmin
+      .from('challenges')
+      .select('department_id')
+      .eq('id', id)
+      .single();
+
+    if (existingChallenge && !isAdmin && userDept && existingChallenge.department_id && existingChallenge.department_id !== userDept) {
+      return ApiResponse.error(
+        res,
+        'You can only publish challenges for your assigned department.',
+        403,
+        'FORBIDDEN'
+      );
+    }
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
@@ -378,6 +429,23 @@ export const publishChallenge = async (req, res) => {
 export const closeChallenge = async (req, res) => {
   try {
     const { id } = req.params;
+    const userDept = req.user.department_id;
+    const isAdmin = Boolean(req.user.is_admin);
+
+    const { data: existingChallenge } = await supabaseAdmin
+      .from('challenges')
+      .select('department_id')
+      .eq('id', id)
+      .single();
+
+    if (existingChallenge && !isAdmin && userDept && existingChallenge.department_id && existingChallenge.department_id !== userDept) {
+      return ApiResponse.error(
+        res,
+        'You can only close challenges for your assigned department.',
+        403,
+        'FORBIDDEN'
+      );
+    }
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
@@ -428,12 +496,27 @@ export const closeChallenge = async (req, res) => {
 export const deleteChallenge = async (req, res) => {
   try {
     const { id } = req.params;
+    const userDept = req.user.department_id;
+    const isAdmin = Boolean(req.user.is_admin);
 
     const { data: challenge } = await supabaseAdmin
       .from('challenges')
-      .select('status, title')
+      .select('status, title, department_id')
       .eq('id', id)
       .single();
+
+    if (!challenge) {
+      return ApiResponse.error(res, 'Challenge not found', 404, 'NOT_FOUND');
+    }
+
+    if (!isAdmin && userDept && challenge.department_id && challenge.department_id !== userDept) {
+      return ApiResponse.error(
+        res,
+        'You can only remove challenges for your assigned department.',
+        403,
+        'FORBIDDEN'
+      );
+    }
 
     if (challenge && challenge.status === 'published') {
       return ApiResponse.error(

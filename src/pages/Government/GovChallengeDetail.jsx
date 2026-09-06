@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -22,18 +22,76 @@ import {
   Printer,
   Download,
   Fingerprint,
-  ExternalLink
+  ExternalLink,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
+import Modal from '../../components/Common/Modal';
 
 const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { challenges, applications, currentUser, currentRole, addToast } = useApp();
+  const {
+    challenges,
+    applications,
+    currentUser,
+    currentRole,
+    addToast,
+    canManageChallenge,
+    updateChallenge,
+    deleteChallenge,
+    CATEGORIES = ['Transport', 'Water', 'Healthcare', 'Energy', 'Agriculture', 'Urban']
+  } = useApp();
 
   // Find the challenge from props, URL param, or fallback to first available
   const challenge = propChallenge || (id ? challenges.find((c) => String(c.id) === String(id)) : null) || challenges[0];
+
+  // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: challenge?.title || '',
+    category: challenge?.category || 'General',
+    problemDescription: challenge?.problemDescription || challenge?.problemStatement || '',
+    technicalRequirements: challenge?.technicalRequirements || '',
+    eligibilityCriteria: challenge?.eligibilityCriteria || '',
+    pilotGuidelines: challenge?.pilotGuidelines || challenge?.pilotRequirements || '',
+    status: challenge?.status || 'Published'
+  });
+
+  const canManage = canManageChallenge(challenge, currentUser);
+
+  const handleOpenEdit = () => {
+    if (!canManage) {
+      alert(`Permission Denied: You can only edit problem statements for your assigned department (${currentUser?.department || 'Your Department'}).`);
+      return;
+    }
+    setEditFormData({
+      title: challenge?.title || '',
+      category: challenge?.category || 'General',
+      problemDescription: challenge?.problemDescription || challenge?.problemStatement || '',
+      technicalRequirements: challenge?.technicalRequirements || '',
+      eligibilityCriteria: challenge?.eligibilityCriteria || '',
+      pilotGuidelines: challenge?.pilotGuidelines || challenge?.pilotRequirements || '',
+      status: challenge?.status || 'Published'
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e?.preventDefault();
+    if (!editFormData.title || !editFormData.problemDescription) {
+      alert('Problem Title and Statement are required.');
+      return;
+    }
+    try {
+      await updateChallenge(challenge.id, editFormData);
+      setIsEditOpen(false);
+    } catch (err) {
+      console.error('Failed to update challenge', err);
+    }
+  };
 
   if (!challenge) {
     return (
@@ -197,6 +255,21 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
                 Stage 3: Expert Evaluation
               </span>
               <Badge status={challenge.status || 'Published'} size="sm" />
+
+              {/* Department Authorization Status Tag */}
+              {currentRole !== 'Startup' && (
+                canManage ? (
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-semibold">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>Your Department Authority</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                    <Lock className="w-3 h-3 text-slate-500" />
+                    <span>Read-Only ({challenge.department})</span>
+                  </span>
+                )
+              )}
             </div>
 
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#001428] tracking-tight leading-snug">
@@ -254,6 +327,17 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
             </div>
 
             <div className="flex items-center gap-2">
+              {canManage && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleOpenEdit}
+                  icon={Edit3}
+                  className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                >
+                  Edit Statement
+                </Button>
+              )}
               {currentRole !== 'Startup' && (
                 <Button
                   variant="primary"
@@ -279,6 +363,21 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
           </div>
         </div>
       </header>
+
+      {/* Read-Only Department Notice for Non-Department Officers */}
+      {currentRole !== 'Startup' && !canManage && (
+        <div className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-md flex items-center justify-between text-xs text-slate-600 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>
+              <strong>Department Scope:</strong> This problem statement belongs to <strong>{challenge.department}</strong>. As an officer of <strong>{currentUser?.department || 'your department'}</strong>, you have <strong>read-only access</strong>. Editing and removal are restricted to assigned department personnel.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded shrink-0">
+            READ-ONLY
+          </span>
+        </div>
+      )}
 
       {/* 5. Horizontal Stage Progression Track (Procurement Lifecycle) */}
       <section className="w-full bg-white border border-[#e2e8f0] rounded-md p-4 sm:p-5 shadow-xs">
@@ -366,9 +465,20 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
                 <FileText className="w-4 h-4 text-[#045eb2]" />
                 <h2 className="text-base font-bold text-[#001428]">Challenge Overview & Objectives</h2>
               </div>
-              <span className="text-[11px] font-mono text-[#74777e] uppercase">
-                Sanction Ref: SANCT-{formattedId.replace('#', '')}
-              </span>
+              <div className="flex items-center gap-2">
+                {canManage && (
+                  <button
+                    onClick={handleOpenEdit}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Statement</span>
+                  </button>
+                )}
+                <span className="text-[11px] font-mono text-[#74777e] uppercase">
+                  Sanction Ref: SANCT-{formattedId.replace('#', '')}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-4 mb-5">
@@ -836,6 +946,17 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {canManage && (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={handleOpenEdit}
+              icon={Edit3}
+              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+            >
+              Edit Statement
+            </Button>
+          )}
           {currentRole !== 'Startup' && (
             <Button
               variant="primary"
@@ -850,6 +971,157 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
           )}
         </div>
       </footer>
+
+      {/* EDIT PROBLEM STATEMENT MODAL */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title="Edit Problem Statement"
+        subtitle={`Editing statement for: ${challenge.department}`}
+        maxWidth="max-w-3xl"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleEditSubmit}
+            >
+              Save Statement Changes
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
+          {/* Department Identification */}
+          <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-md flex items-center justify-between text-emerald-900">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>
+                Assigned Department: <strong>{challenge.department}</strong>
+              </span>
+            </div>
+            <span className="text-[10px] font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-mono">
+              DEPARTMENT MODIFICATION AUTHORIZED
+            </span>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block font-bold text-slate-700 uppercase mb-1">
+              Problem Title *
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={editFormData.title}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full border border-slate-300 rounded-md p-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* Sector & Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 uppercase mb-1">
+                Sector / Category
+              </label>
+              <select
+                name="category"
+                value={editFormData.category}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full border border-slate-300 rounded-md p-2 text-xs bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 uppercase mb-1">
+                Challenge Status
+              </label>
+              <select
+                name="status"
+                value={editFormData.status}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full border border-slate-300 rounded-md p-2 text-xs bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="Published">Published (Open for Startup Proposals)</option>
+                <option value="Draft">Draft (Internal Working Copy)</option>
+                <option value="Closed">Closed (Submissions Concluded)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Problem Statement */}
+          <div>
+            <label className="block font-bold text-slate-700 uppercase mb-1">
+              Problem Statement & Operational Challenge *
+            </label>
+            <textarea
+              name="problemDescription"
+              rows={4}
+              value={editFormData.problemDescription}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, problemDescription: e.target.value }))}
+              className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* Technical Specifications */}
+          <div>
+            <label className="block font-bold text-slate-700 uppercase mb-1">
+              Technical Requirements & Specifications
+            </label>
+            <textarea
+              name="technicalRequirements"
+              rows={3}
+              value={editFormData.technicalRequirements}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, technicalRequirements: e.target.value }))}
+              placeholder="e.g., IoT Telemetry, AI Edge Detection, GIS Integration, REST APIs..."
+              className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Eligibility Criteria */}
+          <div>
+            <label className="block font-bold text-slate-700 uppercase mb-1">
+              Startup Eligibility Criteria
+            </label>
+            <textarea
+              name="eligibilityCriteria"
+              rows={2}
+              value={editFormData.eligibilityCriteria}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, eligibilityCriteria: e.target.value }))}
+              placeholder="e.g., DPIIT Recognized, TRL-7+, ISO 9001, CERT-In compliance..."
+              className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Pilot Guidelines */}
+          <div>
+            <label className="block font-bold text-slate-700 uppercase mb-1">
+              Pilot Sandbox Guidelines & Target Deployments
+            </label>
+            <textarea
+              name="pilotGuidelines"
+              rows={2}
+              value={editFormData.pilotGuidelines}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, pilotGuidelines: e.target.value }))}
+              placeholder="e.g., Field testing deployment specs, target SLAs, milestone acceptance benchmarks..."
+              className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

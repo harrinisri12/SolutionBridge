@@ -105,25 +105,28 @@ const LoginForm = ({
 
       /*
        * Get the authoritative role from the database.
+       *
+       * Admin accounts are represented as:
+       * role = government
+       * is_admin = true
        */
       const backendRole = (profile.role || '').toLowerCase();
       const isAdmin = Boolean(profile.is_admin);
 
       /*
-       * Synchronize the authenticated profile with AppContext.
+       * Synchronize authenticated profile with AppContext.
        */
       if (applyProfile) {
         applyProfile(profile);
       }
 
       /*
-       * Normalize the platform selected by the user.
+       * Normalize the selected platform from the login UI.
        *
-       * UI values:
+       * Expected values:
        * Startup
        * Government
        * Expert
-       * Admin
        */
       const selectedPlatform = (selectedRole || '').toLowerCase();
 
@@ -131,7 +134,11 @@ const LoginForm = ({
       let roleDisplayName = '';
 
       /*
+       * ============================================================
        * STARTUP LOGIN
+       * ============================================================
+       *
+       * Only startup accounts can enter through the Startup portal.
        */
       if (selectedPlatform === 'startup') {
         if (backendRole !== 'startup') {
@@ -145,32 +152,48 @@ const LoginForm = ({
       }
 
       /*
-       * GOVERNMENT OFFICER LOGIN
+       * ============================================================
+       * GOVERNMENT LOGIN
+       * ============================================================
        *
-       * Government officers:
+       * Both Government Officers and Platform Administrators
+       * use the Government login page.
+       *
+       * Government Officer:
        * role = government
        * is_admin = false
        *
-       * Platform administrators:
+       * Platform Administrator:
        * role = government
        * is_admin = true
        *
-       * Therefore an admin cannot log in through the
-       * Government Officer platform.
+       * Therefore:
+       *
+       * Government Officer -> /gov/overview
+       * Administrator      -> /admin/overview
        */
       else if (selectedPlatform === 'government') {
-        if (backendRole !== 'government' || isAdmin) {
+        if (backendRole !== 'government') {
           throw new Error(
-            'Wrong platform. This account is not registered as a Government Officer account.'
+            'Wrong platform. This account is not registered as a Government account.'
           );
         }
 
-        targetPath = '/gov/overview';
-        roleDisplayName = 'Government Officer';
+        if (isAdmin) {
+          targetPath = '/admin/overview';
+          roleDisplayName = 'Platform Administrator';
+        } else {
+          targetPath = '/gov/overview';
+          roleDisplayName = 'Government Officer';
+        }
       }
 
       /*
+       * ============================================================
        * EXPERT LOGIN
+       * ============================================================
+       *
+       * Only expert accounts can enter through the Expert portal.
        */
       else if (selectedPlatform === 'expert') {
         if (backendRole !== 'expert') {
@@ -184,25 +207,9 @@ const LoginForm = ({
       }
 
       /*
-       * ADMIN LOGIN
-       *
-       * Admin is represented in the database as:
-       * role = government
-       * is_admin = true
-       */
-      else if (selectedPlatform === 'admin') {
-        if (backendRole !== 'government' || !isAdmin) {
-          throw new Error(
-            'Wrong platform. This account is not registered as a Platform Administrator account.'
-          );
-        }
-
-        targetPath = '/admin/overview';
-        roleDisplayName = 'Platform Administrator';
-      }
-
-      /*
-       * Invalid or missing platform selection.
+       * ============================================================
+       * INVALID PLATFORM
+       * ============================================================
        */
       else {
         throw new Error(
@@ -211,7 +218,9 @@ const LoginForm = ({
       }
 
       /*
-       * Login successful.
+       * ============================================================
+       * SUCCESS
+       * ============================================================
        */
       addToast(
         `Successfully authenticated as ${roleDisplayName}`,
@@ -219,8 +228,12 @@ const LoginForm = ({
       );
 
       /*
-       * Redirect only after the selected platform has been
-       * successfully matched with the authenticated account.
+       * Redirect only after:
+       *
+       * 1. Supabase authentication succeeds
+       * 2. Profile exists
+       * 3. Account is active
+       * 4. Selected platform matches the account
        */
       navigate(targetPath, {
         replace: true

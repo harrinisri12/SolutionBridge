@@ -2,27 +2,25 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../../components/StatusBadge/StatusBadge';
-import { Target, FileText, Zap, CreditCard, ChevronRight, DollarSign, Plus } from 'lucide-react';
+import { Target, FileText, Zap, CreditCard, ChevronRight, DollarSign, Plus, Award } from 'lucide-react';
 
 const StartupDashboard = () => {
   const { challenges, applications, pilots, payments, requestMilestonePayment, addToast } = useApp();
   const navigate = useNavigate();
 
-  const myStartupId = "startup-1"; // Fictional logged-in startup
-
-  // 1. Calculate stats
-  const availableChallenges = challenges.filter(c => c.status === "Open").length;
-  const myApplications = applications.filter(a => a.startupId === myStartupId);
+  // 1. Calculate stats dynamically
+  const availableChallenges = challenges.filter(c => c.status === "Open" || c.status === "published" || c.status === "active").length;
+  const myApplications = applications;
   const myApplicationsCount = myApplications.length;
-  const shortlistedCount = myApplications.filter(a => a.status === "Shortlisted" || a.status === "🟢 Eligible").length;
+  const shortlistedCount = myApplications.filter(a => a.status === "Shortlisted" || a.status === "🟢 Eligible" || a.status === "selected" || a.status === "Selected").length;
   
-  const myPilots = pilots.filter(p => p.startupId === myStartupId);
-  const activePilotsCount = myPilots.filter(p => p.status === "Active").length;
-  const completedPilotsCount = myPilots.filter(p => p.status === "Completed" || p.status === "Validated" || p.scaleUpStatus === "Scale Up").length;
+  const myPilots = pilots;
+  const activePilotsCount = myPilots.filter(p => p.status === "Active" || p.status === "in_progress").length;
+  const completedPilotsCount = myPilots.filter(p => p.status === "Completed" || p.status === "Validated" || p.status === "completed" || p.scaleUpStatus === "Scale Up").length;
   
   const totalReceivedFunds = payments
-    .filter(pay => pay.startupName === "HealthTech Solutions" && pay.status === "Paid")
-    .reduce((sum, pay) => sum + pay.amount, 0);
+    .filter(pay => pay.status === "Paid" || pay.status === "released")
+    .reduce((sum, pay) => sum + (parseFloat(pay.amount) || 0), 0);
 
   const handleInvoiceMilestone = (pilotId, milestoneId, milestoneTitle) => {
     requestMilestonePayment(pilotId, milestoneId);
@@ -166,12 +164,5 @@ const StartupDashboard = () => {
     </div>
   );
 };
-
-// Simple Award fallback icon
-const Award = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a3 3 0 10-3 3h3zm0 0h4a2 2 0 11-2 2v-2z" />
-  </svg>
-);
 
 export default StartupDashboard;

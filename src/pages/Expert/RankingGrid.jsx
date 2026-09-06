@@ -22,11 +22,8 @@ const RankingGrid = () => {
     const rankings = applications.map(app => {
       const appEvals = appEvaluationsMap[app.id] || [];
       
-      // Look up startup details
-      const startupName = app.startupId === "startup-1" ? "HealthTech Solutions" : 
-                          app.startupId === "startup-2" ? "RuralCare Labs" :
-                          app.startupId === "startup-3" ? "MedTech Systems" : 
-                          app.startupId === "startup-7" ? "SafeWater Dynamics" : "Startup Proposer";
+      // Look up startup details dynamically
+      const startupName = app.startupName || (app.startups && app.startups.name) || "Startup Proposer";
 
       const challenge = challenges.find(c => c.id === app.challengeId) || { title: "Challenge", evaluationCriteria: [] };
 
@@ -37,27 +34,26 @@ const RankingGrid = () => {
         // Average the scores across all expert reviews
         const totalEvaluatedScore = appEvals.reduce((sum, currentEval) => {
           const s = currentEval.scores;
+          if (!s) return sum + (currentEval.weighted_score ? currentEval.weighted_score * 10 : 0);
           // Calculate weighted score for this evaluation
           const weightedScore = 
-            (s.problemUnderstanding * 0.15) +
-            (s.technicalFeasibility * 0.20) +
-            (s.innovation * 0.15) +
-            (s.scalability * 0.15) +
-            (s.costEffectiveness * 0.15) +
-            (s.teamCapability * 0.10) +
-            (s.security * 0.10);
+            ((s.problemUnderstanding || 0) * 0.15) +
+            ((s.technicalFeasibility || 0) * 0.20) +
+            ((s.innovation || 0) * 0.15) +
+            ((s.scalability || 0) * 0.15) +
+            ((s.costEffectiveness || 0) * 0.15) +
+            ((s.teamCapability || 0) * 0.10) +
+            ((s.security || 0) * 0.10);
           
-          gradingComments.push(currentEval.comments);
+          if (currentEval.comments) gradingComments.push(currentEval.comments);
           return sum + weightedScore;
         }, 0);
         
         overallScore = Math.round(totalEvaluatedScore / appEvals.length);
+      } else if (app.scores?.overallScore) {
+        overallScore = Math.round(app.scores.overallScore * 10);
       } else {
-        // Fallback baseline for demo realism
-        if (app.id === "app-101") overallScore = 91;
-        else if (app.id === "app-102") overallScore = 78;
-        else if (app.id === "app-103") overallScore = 65;
-        else overallScore = 0;
+        overallScore = 0;
       }
 
       // Determine recommendation flag

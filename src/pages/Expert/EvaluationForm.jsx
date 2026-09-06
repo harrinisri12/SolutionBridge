@@ -22,9 +22,7 @@ const EvaluationForm = () => {
     ]
   };
 
-  const startupName = app?.startupId === "startup-1" ? "HealthTech Solutions" : 
-                      app?.startupId === "startup-2" ? "RuralCare Labs" : 
-                      app?.startupId === "startup-3" ? "MedTech Systems" : "Startup Proposer";
+  const startupName = app?.startupName || (app?.startups?.name) || "Startup Proposer";
 
   // Score states
   const [scores, setScores] = useState({
@@ -77,8 +75,7 @@ const EvaluationForm = () => {
     }
 
     const evalData = {
-      applicationId: app.id,
-      expertName: "Dr. Ramesh Chandra (Scientific Advisor)",
+      applicationId: app?.id,
       scores,
       comments,
       recommendation,

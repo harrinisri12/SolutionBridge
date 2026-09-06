@@ -3,7 +3,8 @@ import {
   createGovernmentUser,
   createExpertUser,
   listUsers,
-  toggleUserStatus
+  toggleUserStatus,
+  toggleExpertVerification
 } from '../controllers/usersController.js';
 import { requireAuth, requireAdmin, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -22,5 +23,6 @@ router.post('/expert', requireAdmin, asyncHandler(createExpertUser));
 
 // Admin user activation/deactivation
 router.patch('/:id/status', requireAdmin, asyncHandler(toggleUserStatus));
+router.patch('/:id/expert-verification', requireAdmin, asyncHandler(toggleExpertVerification));
 
 export default router;

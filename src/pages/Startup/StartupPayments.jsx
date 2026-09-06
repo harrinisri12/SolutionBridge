@@ -24,18 +24,18 @@ const StartupPayments = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   // Startup's application records
-  const myApps = applications.filter(
-    (a) => a.startupName === 'AquaTech Solutions' || a.startupId === 'startup-1'
-  );
+  const myApps = applications;
 
   // Startup's procurement & payment record
-  const myProcurement = procurementRecords.find(
-    (p) => p.startupName === 'AquaTech Solutions'
-  ) || procurementRecords[0];
+  const myProcurement = procurementRecords[0] || null;
 
-  const totalPaid = myProcurement?.paymentMilestones
-    ?.filter((p) => p.status === 'Paid')
-    .reduce((acc, curr) => acc + 12600000, 0) || 12600000;
+  const totalDisbursed = myProcurement?.paymentMilestones
+    ?.filter((p) => p.status === 'Paid' || p.status === 'released')
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) || 0;
+
+  const totalPending = myProcurement?.paymentMilestones
+    ?.filter((p) => p.status !== 'Paid' && p.status !== 'released')
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -59,29 +59,29 @@ const StartupPayments = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Sanctioned Value"
-          value={myProcurement?.contractValue || '₹ 4,20,00,000'}
+          value={myProcurement?.contractValue || (myProcurement?.total_amount ? `₹ ${Number(myProcurement.total_amount).toLocaleString('en-IN')}` : '₹ 0')}
           subtitle="Pilot & Direct Procurement"
           icon={Building2}
           color="blue"
         />
         <StatCard
           title="Disbursed Funds"
-          value="₹ 1,26,00,000"
+          value={`₹ ${totalDisbursed.toLocaleString('en-IN')}`}
           subtitle="Direct Treasury Credit"
           icon={CheckCircle2}
           color="emerald"
         />
         <StatCard
           title="Pending Authorization"
-          value="₹ 1,47,00,000"
-          subtitle="Batch-1 Milestone QC"
+          value={`₹ ${totalPending.toLocaleString('en-IN')}`}
+          subtitle="Milestone In-Review"
           icon={Clock}
           color="amber"
         />
         <StatCard
           title="Procurement Scale-Up"
-          value="Statewide"
-          subtitle="12 Municipal Corporations"
+          value={myProcurement?.scaleUpStatus || (myProcurement ? 'Approved' : 'Pending')}
+          subtitle="Statewide Expansion"
           icon={TrendingUp}
           color="purple"
         />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Zap,
@@ -21,17 +22,47 @@ import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import ChartCard from '../../components/Common/ChartCard';
+import EmptyState from '../../components/Common/EmptyState';
 
 const GovPilots = () => {
   const { pilots, submitPilotValidation } = useApp();
+  const navigate = useNavigate();
 
-  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || 'PILOT-2026-001');
+  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || '');
   const [selectedEvidenceFile, setSelectedEvidenceFile] = useState(null);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [validationComments, setValidationComments] = useState('');
   const [validationDecision, setValidationDecision] = useState('Validated');
 
   const currentPilot = pilots.find((p) => p.id === selectedPilotId) || pilots[0];
+
+  if (!currentPilot) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <Zap className="w-4 h-4 text-blue-600" />
+              <span>Field Trials & KPI Validation Console</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">
+              Pilot & Validation Management
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Track real-time milestone progress, sensor telemetry, evidence audits, and expert validation signoffs.
+            </p>
+          </div>
+        </div>
+        <EmptyState
+          icon={Zap}
+          title="No Active Field Pilots"
+          description="There are currently no active pilot deployments underway. Approve a shortlisted application to launch a new field pilot."
+          actionText="Review Applications"
+          onAction={() => navigate('/gov/applications')}
+        />
+      </div>
+    );
+  }
 
   // Performance Chart Data using Chart.js
   const performanceChartData = {

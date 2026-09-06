@@ -9,14 +9,14 @@ const ExpertDashboard = () => {
   const navigate = useNavigate();
 
   // Filter proposals waiting expert evaluation
-  const pendingEvaluations = applications.filter(a => a.status === "🟢 Eligible" || a.status === "Shortlisted" || a.status === "Submitted");
+  const pendingEvaluations = applications.filter(a => a.status === "🟢 Eligible" || a.status === "Shortlisted" || a.status === "Submitted" || a.status === "Under Review" || a.status === "submitted" || a.status === "under_evaluation");
   
   // Completed evaluations by this expert
-  const completedEvaluations = evaluations.filter(e => e.expertId === "expert-1");
+  const completedEvaluations = evaluations;
 
   const avgScore = completedEvaluations.length > 0 
-    ? Math.round(completedEvaluations.reduce((sum, e) => sum + e.overallScore, 0) / completedEvaluations.length) 
-    : 87; // Mock default
+    ? Math.round(completedEvaluations.reduce((sum, e) => sum + (e.overallScore || (e.weighted_score ? e.weighted_score * 10 : 0) || 0), 0) / completedEvaluations.length) 
+    : 0;
 
   return (
     <div className="p-6 space-y-6 text-left">

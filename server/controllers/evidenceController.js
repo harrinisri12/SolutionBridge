@@ -13,13 +13,13 @@ export const uploadEvidence = async (req, res) => {
   try {
     const { pilotId } = req.params;
     const userId = req.user.id;
-    const { milestone_id, file_name, file_url, evidence_type, description } = req.body;
+    const { milestone_id, file_name, file_url, evidence_type } = req.body;
     const file = req.file; // From multer if direct file upload
 
     // 1. Verify pilot ownership
     const { data: pilot, error: pilotError } = await supabaseAdmin
       .from('pilots')
-      .select('id, startup_id, startups(profile_id, name), challenges(title)')
+      .select('id, startup_id, startups(user_id, name), applications(challenge_id, challenges(title))')
       .eq('id', pilotId)
       .single();
 
@@ -27,7 +27,7 @@ export const uploadEvidence = async (req, res) => {
       return ApiResponse.error(res, 'Pilot not found', 404, 'NOT_FOUND');
     }
 
-    if (req.user.role === 'startup' && pilot.startups?.profile_id !== userId) {
+    if (req.user.role === 'startup' && pilot.startups?.user_id !== userId) {
       return ApiResponse.error(res, 'You do not have permission to upload evidence for this pilot', 403, 'FORBIDDEN');
     }
 
@@ -57,7 +57,6 @@ export const uploadEvidence = async (req, res) => {
           file_name: finalFileName,
           file_url: finalFileUrl,
           evidence_type: evidence_type || 'Test Report',
-          description: description || null,
           verification_status: 'pending',
           created_at: new Date().toISOString()
         }
@@ -76,7 +75,7 @@ export const uploadEvidence = async (req, res) => {
       action: AuditActions.EVIDENCE_UPLOADED,
       entityType: 'pilot_evidence',
       entityId: evidence.id,
-      description: `Uploaded evidence '${finalFileName}' for pilot '${pilot.challenges?.title}'`
+      description: `Uploaded evidence '${finalFileName}' for pilot '${pilot.applications?.challenges?.title || pilotId}'`
     });
 
     // 5. Notify Government & Assigned Experts
@@ -145,7 +144,7 @@ export const listPilotEvidence = async (req, res) => {
 export const verifyEvidence = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status = 'verified', verification_comments } = req.body;
+    const { status = 'verified' } = req.body;
 
     const validStatuses = ['pending', 'verified', 'rejected'];
     if (!validStatuses.includes(status.toLowerCase())) {
@@ -155,13 +154,10 @@ export const verifyEvidence = async (req, res) => {
     const { data: evidence, error } = await supabaseAdmin
       .from('pilot_evidence')
       .update({
-        verification_status: status.toLowerCase(),
-        verification_comments: verification_comments || null,
-        verified_by: req.user.id,
-        verified_at: new Date().toISOString()
+        verification_status: status.toLowerCase()
       })
       .eq('id', id)
-      .select('*, pilots(startup_id, startups(name, profile_id), challenges(title))')
+      .select('*, pilots(startup_id, startups(name, user_id), applications(challenge_id, challenges(title)))')
       .single();
 
     if (error || !evidence) {
@@ -178,9 +174,9 @@ export const verifyEvidence = async (req, res) => {
     });
 
     // Notify Startup Founder
-    if (evidence.pilots?.startups?.profile_id) {
+    if (evidence.pilots?.startups?.user_id) {
       await createNotification({
-        userId: evidence.pilots.startups.profile_id,
+        userId: evidence.pilots.startups.user_id,
         role: 'startup',
         title: `Evidence ${status.toUpperCase()}`,
         message: `Your uploaded file '${evidence.file_name}' was marked as '${status}' by the verification team.`,

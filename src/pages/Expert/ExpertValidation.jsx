@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   ShieldCheck,
@@ -20,16 +21,46 @@ import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import ChartCard from '../../components/Common/ChartCard';
+import EmptyState from '../../components/Common/EmptyState';
 
 const ExpertValidation = () => {
   const { pilots, verifyEvidence, submitPilotValidation, currentUser } = useApp();
+  const navigate = useNavigate();
 
-  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || 'PILOT-2026-001');
+  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || '');
   const [validationResult, setValidationResult] = useState('Validated');
   const [validationComments, setValidationComments] = useState('');
   const [selectedEvidencePreview, setSelectedEvidencePreview] = useState(null);
 
   const currentPilot = pilots.find((p) => p.id === selectedPilotId) || pilots[0];
+
+  if (!currentPilot) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <ShieldCheck className="w-4 h-4 text-purple-600" />
+              <span>Independent Scientific Validation Console</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">
+              Pilot Field Validation & Audit Sign-Off
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Audit empirical telemetry data, verify submitted evidence artifacts, and issue final validation recommendations.
+            </p>
+          </div>
+        </div>
+        <EmptyState
+          icon={ShieldCheck}
+          title="No Pilot Validations Assigned"
+          description="You currently have no field pilots assigned for independent scientific validation. Validations will appear here when assigned by the government department."
+          actionText="Review Evaluations"
+          onAction={() => navigate('/expert/evaluation')}
+        />
+      </div>
+    );
+  }
 
   // Baseline vs Target vs Actual Chart using Chart.js
   const kpiComparisonChartData = {

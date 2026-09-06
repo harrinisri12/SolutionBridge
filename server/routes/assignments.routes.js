@@ -11,6 +11,7 @@ const router = Router();
 
 router.use(requireAuth);
 
+router.post('/', requireRole('government'), asyncHandler(assignExpertToApplication));
 router.post('/:id/experts', requireRole('government'), asyncHandler(assignExpertToApplication));
 router.get('/:id/experts', asyncHandler(listApplicationExperts));
 router.delete('/:id/experts/:expertId', requireRole('government'), asyncHandler(removeExpertAssignment));

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Zap,
@@ -21,6 +22,7 @@ import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import ChartCard from '../../components/Common/ChartCard';
 import FileUpload from '../../components/Common/FileUpload';
+import EmptyState from '../../components/Common/EmptyState';
 
 const PILOT_TIMELINE = [
   { id: 'selected', label: 'Selected', status: 'completed' },
@@ -33,19 +35,52 @@ const PILOT_TIMELINE = [
 
 const StartupPilot = () => {
   const { pilots, uploadPilotEvidence, currentUser } = useApp();
+  const navigate = useNavigate();
 
-  const myPilot = pilots[0]; // AquaTech Solutions pilot
-  const [selectedMilestoneForUpload, setSelectedMilestoneForUpload] = useState('m-4');
+  const myPilot = pilots[0];
+  const [selectedMilestoneForUpload, setSelectedMilestoneForUpload] = useState(myPilot?.milestones?.[0]?.id || 'm-1');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  if (!myPilot) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <Zap className="w-4 h-4 text-emerald-600" />
+              <span>Active Pilot Deployment Console</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">
+              Pilot Field Deployment Console
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Monitor field deployment KPIs, upload milestone deliverables, and view expert validation progress.
+            </p>
+          </div>
+        </div>
+        <EmptyState
+          icon={Zap}
+          title="No Active Pilot Assigned"
+          description="Your startup does not have an active pilot deployment yet. Once a submitted proposal is approved and cleared for field pilot by the government department, your pilot console will be activated here."
+          actionText="Browse Open Challenges"
+          onAction={() => navigate('/startup/challenges')}
+        />
+      </div>
+    );
+  }
 
   // Performance Chart Data (Baseline vs Target vs Current Value)
   const performanceChartData = {
-    labels: ['Baseline (Manual Lab)', 'Month 2 Field Trial', 'Month 4 Field Trial', 'Current Actual Value', 'Government Target'],
+    labels: ['Baseline Traditional', 'Current Actual Value', 'Government Target'],
     datasets: [
       {
-        label: 'Contamination Alert Latency (Minutes - Lower is better)',
-        data: [2880, 18, 12, 8.5, 15],
-        backgroundColor: ['#64748b', '#2563eb', '#2563eb', '#059669', '#dc2626'],
+        label: 'Field KPI Metric Comparison',
+        data: [
+          myPilot.baselineValue || 100,
+          myPilot.actualValue || 8.5,
+          myPilot.targetValue || 15
+        ],
+        backgroundColor: ['#64748b', '#059669', '#dc2626'],
         borderRadius: 4
       }
     ]

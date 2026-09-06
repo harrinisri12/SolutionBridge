@@ -29,14 +29,14 @@ const GovProcurement = () => {
     updateMilestonePayment
   } = useApp();
 
-  const [selectedRecord, setSelectedRecord] = useState(procurementRecords[0]);
+  const [selectedRecord, setSelectedRecord] = useState(procurementRecords[0] || null);
   const [isDPOModalOpen, setIsDPOModalOpen] = useState(false);
 
   // Overview Counts
-  const readyForProcurement = procurementRecords.filter((p) => p.procurementStatus === 'Approved').length + 2;
-  const inProgress = procurementRecords.filter((p) => p.procurementStatus === 'Procurement in Progress').length;
-  const completedProcurement = procurementRecords.filter((p) => p.procurementStatus === 'Procured' || p.procurementStatus === 'Scaled').length;
-  const solutionsScaled = procurementRecords.filter((p) => p.scaleUpStatus.includes('Scaled') || p.scaleUpStatus.includes('Expansion')).length;
+  const readyForProcurement = procurementRecords.filter((p) => p.procurementStatus === 'Approved' || p.status === 'approved').length;
+  const inProgress = procurementRecords.filter((p) => p.procurementStatus === 'Procurement in Progress' || p.status === 'pending' || p.status === 'in_progress').length;
+  const completedProcurement = procurementRecords.filter((p) => p.procurementStatus === 'Procured' || p.procurementStatus === 'Scaled' || p.status === 'paid').length;
+  const solutionsScaled = procurementRecords.filter((p) => (p.scaleUpStatus || '').includes('Scaled') || (p.scaleUpStatus || '').includes('Expansion')).length;
 
   // Chart 1: Challenges by Category
   const categoryChartData = {

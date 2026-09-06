@@ -33,6 +33,7 @@ const TopHeader = () => {
   // Derive human-readable page title
   const getPageInfo = () => {
     const p = location.pathname;
+    if (p.includes('/admin')) return 'Platform Administration & Security';
     if (p.includes('/overview') || p.includes('/dashboard')) return 'Overview & Analytics';
     if (p.includes('/challenges')) return 'Government Challenges';
     if (p.includes('/applications')) return 'Applications & Evaluation Management';

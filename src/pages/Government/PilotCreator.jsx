@@ -97,16 +97,15 @@ const PilotCreator = () => {
 
     const challenge = challenges.find(c => c.id === selectedChallengeId);
     
-    // Look up startup name
-    const startupName = selectedStartupId === "startup-1" ? "HealthTech Solutions" : 
-                        selectedStartupId === "startup-2" ? "RuralCare Labs" :
-                        selectedStartupId === "startup-3" ? "MedTech Systems" : 
-                        selectedStartupId === "startup-7" ? "SafeWater Dynamics" : "Startup Proposer";
+    // Look up startup name dynamically
+    const appMatch = applications.find(a => a.startupId === selectedStartupId || a.id === selectedStartupId);
+    const startupName = appMatch?.startupName || "Selected Startup";
 
     const pilotData = {
       challengeId: selectedChallengeId,
-      challengeTitle: challenge.title,
+      challengeTitle: challenge?.title || "Pilot Challenge",
       startupId: selectedStartupId,
+      applicationId: appMatch?.id || selectedStartupId,
       startupName,
       startDate,
       endDate,

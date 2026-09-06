@@ -12,7 +12,10 @@ export const listStartups = async (req, res) => {
   try {
     const { sector, verified } = req.query;
 
-    let query = supabaseAdmin.from('startups').select('*, profiles(full_name, email, phone)').order('created_at', { ascending: false });
+    let query = supabaseAdmin
+      .from('startups')
+      .select('*, profiles(full_name, email, phone, organization, is_active)')
+      .order('created_at', { ascending: false });
 
     if (sector) {
       query = query.eq('sector', sector);
@@ -46,7 +49,7 @@ export const getMyStartup = async (req, res) => {
     const { data: startup, error } = await supabaseAdmin
       .from('startups')
       .select('*')
-      .eq('profile_id', userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (error) {
@@ -97,7 +100,7 @@ export const getStartupById = async (req, res) => {
 export const createStartupProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, dpiit_number, sector, description, website, team_size, founded_year, address } = req.body;
+    const { name, dpiit_number, sector, description, website } = req.body;
 
     if (!name || !dpiit_number) {
       return ApiResponse.error(res, 'Startup name and DPIIT recognition number are required', 422, 'VALIDATION_ERROR');
@@ -118,15 +121,12 @@ export const createStartupProfile = async (req, res) => {
       .from('startups')
       .insert([
         {
-          profile_id: userId,
+          user_id: userId,
           name: name.trim(),
           dpiit_number: dpiit_number.trim(),
           sector: sector || 'Technology',
           description: description || null,
           website: website || null,
-          team_size: team_size || null,
-          founded_year: founded_year || null,
-          address: address || null,
           verified: false,
           created_at: new Date().toISOString()
         }
@@ -161,29 +161,24 @@ export const createStartupProfile = async (req, res) => {
 export const updateMyStartup = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, sector, description, website, team_size, founded_year, address } = req.body;
+    const { name, sector, description, website } = req.body;
 
     // Check ownership
     const { data: existing, error: findError } = await supabaseAdmin
       .from('startups')
       .select('id')
-      .eq('profile_id', userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (findError || !existing) {
       return ApiResponse.error(res, 'No startup profile found to update', 404, 'NOT_FOUND');
     }
 
-    const updates = {
-      updated_at: new Date().toISOString()
-    };
+    const updates = {};
     if (name) updates.name = name.trim();
     if (sector) updates.sector = sector;
     if (description !== undefined) updates.description = description;
     if (website !== undefined) updates.website = website;
-    if (team_size !== undefined) updates.team_size = team_size;
-    if (founded_year !== undefined) updates.founded_year = founded_year;
-    if (address !== undefined) updates.address = address;
 
     const { data: updatedStartup, error: updateError } = await supabaseAdmin
       .from('startups')
@@ -219,15 +214,12 @@ export const updateMyStartup = async (req, res) => {
 export const verifyStartup = async (req, res) => {
   try {
     const { id } = req.params;
-    const { verified = true, verification_notes } = req.body;
+    const { verified = true } = req.body;
 
     const { data: startup, error } = await supabaseAdmin
       .from('startups')
       .update({
-        verified: Boolean(verified),
-        verification_notes: verification_notes || null,
-        verified_by: req.user.id,
-        verified_at: new Date().toISOString()
+        verified: Boolean(verified)
       })
       .eq('id', id)
       .select('*, profiles(id, email, full_name)')
@@ -246,9 +238,9 @@ export const verifyStartup = async (req, res) => {
     });
 
     // Notify startup founder
-    if (startup.profile_id) {
+    if (startup.user_id) {
       await createNotification({
-        userId: startup.profile_id,
+        userId: startup.user_id,
         role: 'startup',
         title: 'DPIIT Profile Verification Updated',
         message: `Your startup profile '${startup.name}' is now marked as ${verified ? 'VERIFIED' : 'PENDING'}.`,

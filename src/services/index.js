@@ -5,3 +5,6 @@ export * from './applicationService';
 export * from './pilotService';
 export * from './procurementService';
 export * from './notificationService';
+export * from './departmentService';
+export * from './startupService';
+export * from './auditService';

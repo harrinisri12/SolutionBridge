@@ -29,8 +29,7 @@ export const logTelemetry = async (req, res) => {
           metric_name: metric_name.trim(),
           metric_value: val,
           unit: unit || '%',
-          recorded_at: recorded_at || new Date().toISOString(),
-          created_at: new Date().toISOString()
+          recorded_at: recorded_at || new Date().toISOString()
         }
       ])
       .select()
@@ -44,7 +43,7 @@ export const logTelemetry = async (req, res) => {
     // Update actual_value on the parent pilot record
     await supabaseAdmin
       .from('pilots')
-      .update({ actual_value: val, updated_at: new Date().toISOString() })
+      .update({ actual_value: val })
       .eq('id', pilotId);
 
     await logAudit({

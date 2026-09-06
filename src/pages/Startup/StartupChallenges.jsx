@@ -42,14 +42,15 @@ const StartupChallenges = () => {
   const [viewChallenge, setViewChallenge] = useState(null);
   const [applyChallenge, setApplyChallenge] = useState(null);
 
+  const startupDefaultName = currentUser?.organization || currentUser?.user?.organization || currentUser?.user?.full_name || 'My Startup';
+
   // Application Form State
   const [appForm, setAppForm] = useState({
-    startupName: currentUser.startupName || 'AquaTech Solutions',
-    startupId: currentUser.startupId || 'startup-1',
+    startupName: startupDefaultName,
     solutionDescription: '',
     technicalApproach: '',
     expectedImpact: '',
-    estimatedCost: '₹ 80,00,000',
+    estimatedCost: '₹ 50,00,000',
     documents: [
       { name: 'Technical_Proposal_Deck.pdf', size: '3.8 MB' },
       { name: 'DPIIT_Registration_Certificate.pdf', size: '1.2 MB' }
@@ -69,7 +70,6 @@ const StartupChallenges = () => {
       department: applyChallenge.department,
       category: applyChallenge.category,
       startupName: appForm.startupName,
-      startupId: appForm.startupId,
       proposedSolution: appForm.solutionDescription,
       technicalApproach: appForm.technicalApproach,
       expectedImpact: appForm.expectedImpact,
@@ -80,12 +80,11 @@ const StartupChallenges = () => {
     setApplyChallenge(null);
     setViewChallenge(null);
     setAppForm({
-      startupName: currentUser.startupName || 'AquaTech Solutions',
-      startupId: currentUser.startupId || 'startup-1',
+      startupName: startupDefaultName,
       solutionDescription: '',
       technicalApproach: '',
       expectedImpact: '',
-      estimatedCost: '₹ 80,00,000',
+      estimatedCost: '₹ 50,00,000',
       documents: [
         { name: 'Technical_Proposal_Deck.pdf', size: '3.8 MB' },
         { name: 'DPIIT_Registration_Certificate.pdf', size: '1.2 MB' }

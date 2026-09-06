@@ -1,20 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  DEPARTMENTS,
-  CATEGORIES,
-  STARTUPS,
-  CHALLENGES,
-  APPLICATIONS,
-  PILOTS,
-  PROCUREMENT_RECORDS,
-  INITIAL_NOTIFICATIONS,
-  RECENT_ACTIVITIES
-} from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { CATEGORIES } from '../config/constants';
 import { challengeService } from '../services/challengeService';
 import { applicationService } from '../services/applicationService';
 import { pilotService } from '../services/pilotService';
 import { procurementService } from '../services/procurementService';
 import { notificationService } from '../services/notificationService';
+import { departmentService } from '../services/departmentService';
+import { startupService } from '../services/startupService';
+import { auditService } from '../services/auditService';
+import { authService } from '../services/authService';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const AppContext = createContext();
 
@@ -26,54 +21,186 @@ export const useApp = () => {
   return context;
 };
 
+// Normalization Helpers to bridge database models to UI models seamlessly
+export const normalizeChallenge = (c) => {
+  if (!c) return null;
+  return {
+    ...c,
+    id: c.id,
+    title: c.title || '',
+    problemStatement: c.problem_statement || '',
+    problemDescription: c.problem_statement || '',
+    category: c.category || 'General',
+    status: c.status === 'published' ? 'Published' : c.status === 'closed' ? 'Closed' : 'Draft',
+    rawStatus: c.status,
+    department: c.government_departments?.name || 'Government Department',
+    departmentId: c.department_id,
+    applicationsCount: c.applicationsCount !== undefined ? c.applicationsCount : (c.applications?.[0]?.count || 0),
+    technicalRequirements: c.technical_requirements || '',
+    pilotGuidelines: c.pilot_guidelines || '',
+    createdDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : '',
+    publishedDate: c.published_at ? new Date(c.published_at).toISOString().split('T')[0] : ''
+  };
+};
+
+export const normalizeApplication = (a) => {
+  if (!a) return null;
+  const ev = a.evaluations?.[0];
+  return {
+    ...a,
+    id: a.id,
+    challengeId: a.challenge_id,
+    challengeTitle: a.challenges?.title || 'Challenge Proposal',
+    startupId: a.startup_id,
+    startupName: a.startups?.name || 'Startup',
+    department: a.challenges?.government_departments?.name || 'Government Department',
+    category: a.challenges?.category || 'General',
+    proposalText: a.proposal || '',
+    proposedSolution: a.proposal || '',
+    solutionOverview: a.proposal || '',
+    technicalSolution: a.technical_solution || a.proposal || '',
+    estimatedCost: a.estimated_cost || 'To be determined',
+    status: a.status === 'under_review' ? 'Submitted' : a.status === 'shortlisted' ? 'Shortlisted' : a.status === 'selected' ? 'Selected' : a.status === 'rejected' ? 'Rejected' : a.status,
+    rawStatus: a.status,
+    eligibility: a.dpiit_verified ? 'Verified (DPIIT)' : 'Under Review',
+    submittedDate: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : '',
+    scores: ev ? {
+      technicalFeasibility: Number(ev.technical_feasibility) || 0,
+      innovation: Number(ev.innovation_ip) || 0,
+      costEffectiveness: Number(ev.cost_effectiveness) || 0,
+      scalability: Number(ev.scalability) || 0,
+      risk: Number(ev.implementation_risk) || 0,
+      overallScore: Number(ev.weighted_score) || 0
+    } : {
+      technicalFeasibility: 0,
+      innovation: 0,
+      costEffectiveness: 0,
+      scalability: 0,
+      risk: 0,
+      overallScore: 0
+    },
+    expertRecommendation: ev?.recommendation || '',
+    evaluatedBy: ev?.experts?.profiles?.full_name || '',
+    evaluationDate: ev?.created_at ? new Date(ev.created_at).toISOString().split('T')[0] : '',
+    startups: a.startups || null
+  };
+};
+
+export const normalizePilot = (p) => {
+  if (!p) return null;
+  const val = p.validations?.[0];
+  const milestones = (p.pilot_milestones || []).map(m => ({
+    ...m,
+    id: m.id,
+    title: m.title || '',
+    description: m.description || '',
+    targetDate: m.target_date || '',
+    status: m.status === 'completed' || m.status === 'verified' ? 'Completed' : m.status === 'in_progress' ? 'In Progress' : 'Pending',
+    rawStatus: m.status,
+    progress: m.status === 'completed' || m.status === 'verified' ? 100 : m.status === 'in_progress' ? 50 : 0,
+    completedAt: m.completed_at || null,
+    evidence: (m.pilot_evidence || []).map(e => ({
+      id: e.id,
+      name: e.file_name,
+      fileName: e.file_name,
+      fileUrl: e.file_url,
+      downloadUrl: e.downloadUrl || e.file_url,
+      type: e.evidence_type || 'Document',
+      status: e.verification_status === 'verified' ? 'Verified' : e.verification_status === 'rejected' ? 'Rejected' : 'Pending Review',
+      rawStatus: e.verification_status,
+      date: e.created_at ? new Date(e.created_at).toISOString().split('T')[0] : ''
+    }))
+  }));
+
+  return {
+    ...p,
+    id: p.id,
+    applicationId: p.application_id,
+    challengeTitle: p.applications?.challenges?.title || 'Sandbox Pilot',
+    startupName: p.startups?.name || 'Startup Founder',
+    department: p.applications?.challenges?.government_departments?.name || 'Government Department',
+    category: p.applications?.challenges?.category || 'General',
+    location: p.location || 'Municipal Pilot Zone',
+    duration: `${p.duration_days || 180} Days`,
+    durationDays: p.duration_days || 180,
+    status: p.status === 'approved' ? 'Approved' : p.status === 'in_progress' ? 'Ongoing' : p.status === 'completed' ? 'Completed' : p.status === 'failed' ? 'Failed' : 'Validation',
+    rawStatus: p.status,
+    overallProgress: p.progress || 0,
+    baselineValue: p.baseline_value,
+    targetValue: p.target_value,
+    actualValue: p.actual_value,
+    milestones,
+    expertValidation: val ? {
+      expertName: val.experts?.profiles?.full_name || 'Independent Expert',
+      validationStatus: val.final_result === 'approved' ? 'Validated' : val.final_result,
+      validationDate: val.signed_at ? new Date(val.signed_at).toISOString().split('T')[0] : '',
+      comments: val.comments || ''
+    } : null
+  };
+};
+
+export const normalizeProcurement = (pr) => {
+  if (!pr) return null;
+  const milestones = (pr.payments || []).map(pm => ({
+    ...pm,
+    id: pm.id,
+    milestoneName: pm.milestone_name || 'Payment Milestone',
+    amount: pr.total_amount ? `₹ ${Number(pm.amount || 0).toLocaleString('en-IN')}` : '₹ 0',
+    rawAmount: Number(pm.amount || 0),
+    status: pm.status === 'released' ? 'Paid' : pm.status === 'approved' ? 'Approved' : 'Pending',
+    rawStatus: pm.status,
+    releasedAt: pm.released_at || null
+  }));
+
+  return {
+    ...pr,
+    id: pr.id,
+    pilotId: pr.pilot_id,
+    startupName: pr.startups?.name || 'Startup',
+    solutionName: pr.pilots?.applications?.challenges?.title || `Sanction Order ${pr.procurement_order}`,
+    department: pr.government_departments?.name || 'Government Department',
+    orderNumber: pr.procurement_order,
+    orderDate: pr.created_at ? new Date(pr.created_at).toISOString().split('T')[0] : '',
+    contractValue: pr.total_amount ? `₹ ${Number(pr.total_amount).toLocaleString('en-IN')}` : '₹ 0',
+    rawContractValue: Number(pr.total_amount || 0),
+    procurementStatus: pr.status === 'completed' ? 'Procured' : pr.status === 'approved' ? 'Approved' : 'Pending',
+    scaleUpStatus: pr.status === 'completed' ? 'Scaled' : 'Pending',
+    rawStatus: pr.status,
+    tenderExemption: pr.tender_exemption_certificate,
+    paymentMilestones: milestones
+  };
+};
+
 export const AppProvider = ({ children }) => {
-  const [challenges, setChallenges] = useState(CHALLENGES);
-  const [applications, setApplications] = useState(APPLICATIONS);
-  const [pilots, setPilots] = useState(PILOTS);
-  const [procurementRecords, setProcurementRecords] = useState(PROCUREMENT_RECORDS);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES);
+  // Real database state backed by Supabase APIs
+  const [challenges, setChallenges] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [pilots, setPilots] = useState([]);
+  const [procurementRecords, setProcurementRecords] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [startups, setStartups] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
 
-  // Active Role and User Persona
-  // Valid roles: "Government", "Startup", "Expert"
+  // Authentication State
+  const [authSession, setAuthSession] = useState(null);
+  const [authProfile, setAuthProfile] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // Active Role and Persona State
   const [currentRole, setCurrentRoleState] = useState("Government");
   const [currentUser, setCurrentUser] = useState({
-    name: "Dr. K. Srinivas, IAS",
-    designation: "Principal Secretary & Mission Director",
-    department: "Water Resources & Innovation Mission",
+    id: null,
+    name: "Government Officer",
+    designation: "Officer in Charge",
+    department: "Government Department",
     role: "Government",
-    email: "dir.innovate@gov.in",
-    avatar: "KS"
+    email: "officer@gov.in",
+    avatar: "GO"
   });
-
-  // Attempt background sync with backend if live
-  useEffect(() => {
-    let isMounted = true;
-    const syncBackendData = async () => {
-      try {
-        const [chRes, notifRes] = await Promise.allSettled([
-          challengeService.getChallenges(),
-          notificationService.getNotifications()
-        ]);
-
-        if (isMounted) {
-          if (chRes.status === 'fulfilled' && chRes.value?.data?.challenges?.length > 0) {
-            setIsBackendConnected(true);
-          }
-          if (notifRes.status === 'fulfilled' && notifRes.value?.data?.notifications?.length > 0) {
-            setNotifications(notifRes.value.data.notifications);
-          }
-        }
-      } catch {
-        // Safe offline mode fallback
-      }
-    };
-
-    syncBackendData();
-    return () => { isMounted = false; };
-  }, []);
 
   const addToast = (message, type = "success") => {
     const id = Date.now();
@@ -81,6 +208,230 @@ export const AppProvider = ({ children }) => {
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
+  };
+
+  // Apply authoritative backend profile to user session
+  const applyProfile = (profile) => {
+    if (!profile) return;
+    setAuthProfile(profile);
+    const roleLower = (profile.role || '').toLowerCase();
+    const isAdmin = Boolean(profile.is_admin);
+
+    if (roleLower === 'government') {
+      setCurrentRoleState(isAdmin ? 'Admin' : 'Government');
+      setCurrentUser({
+        id: profile.id,
+        name: profile.full_name || (isAdmin ? 'Platform Administrator' : 'Government Officer'),
+        designation: isAdmin ? 'Platform Administrator' : 'Government Officer',
+        department: profile.department?.name || profile.organization || 'Government Department',
+        departmentId: profile.department_id,
+        role: isAdmin ? 'Admin' : 'Government',
+        isAdmin,
+        email: profile.email,
+        avatar: (profile.full_name || 'GO').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      });
+    } else if (roleLower === 'startup') {
+      setCurrentRoleState('Startup');
+      setCurrentUser({
+        id: profile.id,
+        name: profile.full_name || 'Startup Founder',
+        designation: 'Founder / CEO',
+        startupName: profile.startup?.name || profile.organization || 'DPIIT Startup',
+        startupId: profile.startup?.id,
+        role: 'Startup',
+        isAdmin: false,
+        email: profile.email,
+        avatar: (profile.full_name || 'ST').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      });
+    } else if (roleLower === 'expert') {
+      setCurrentRoleState('Expert');
+      setCurrentUser({
+        id: profile.id,
+        name: profile.full_name || 'Technical Expert',
+        designation: 'Technical Screening & Evaluation Panel',
+        institution: profile.expert?.organization || profile.organization || 'Expert Evaluator Panel',
+        role: 'Expert',
+        isAdmin: false,
+        email: profile.email,
+        avatar: (profile.full_name || 'EX').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      });
+    }
+  };
+
+  // Unified Data Fetcher from Real Backend REST APIs
+  const refreshData = useCallback(async () => {
+    setIsDataLoading(true);
+    try {
+      const [
+        chRes,
+        appRes,
+        pilotRes,
+        procRes,
+        notifRes,
+        deptRes,
+        startupRes,
+        auditRes
+      ] = await Promise.allSettled([
+        challengeService.getChallenges(),
+        applicationService.getApplications(),
+        pilotService.getPilots(),
+        procurementService.getProcurements(),
+        notificationService.getNotifications(),
+        departmentService.getDepartments(),
+        startupService.getStartups(),
+        auditService.getAuditLogs({ limit: 20 })
+      ]);
+
+      if (chRes.status === 'fulfilled' && chRes.value?.data?.challenges) {
+        setChallenges(chRes.value.data.challenges.map(normalizeChallenge));
+        setIsBackendConnected(true);
+      }
+
+      if (appRes.status === 'fulfilled' && appRes.value?.data?.applications) {
+        setApplications(appRes.value.data.applications.map(normalizeApplication));
+      }
+
+      if (pilotRes.status === 'fulfilled' && pilotRes.value?.data?.pilots) {
+        setPilots(pilotRes.value.data.pilots.map(normalizePilot));
+      }
+
+      if (procRes.status === 'fulfilled' && procRes.value?.data?.procurements) {
+        setProcurementRecords(procRes.value.data.procurements.map(normalizeProcurement));
+      }
+
+      if (notifRes.status === 'fulfilled' && notifRes.value?.data?.notifications) {
+        setNotifications(notifRes.value.data.notifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          read: Boolean(n.is_read),
+          is_read: Boolean(n.is_read),
+          timestamp: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recent'
+        })));
+      }
+
+      if (deptRes.status === 'fulfilled' && deptRes.value?.data?.departments) {
+        setDepartments(deptRes.value.data.departments);
+      }
+
+      if (startupRes.status === 'fulfilled' && startupRes.value?.data?.startups) {
+        setStartups(startupRes.value.data.startups);
+      }
+
+      if (auditRes.status === 'fulfilled' && auditRes.value?.data?.logs) {
+        setRecentActivities(auditRes.value.data.logs.map(log => ({
+          id: log.id,
+          title: log.description || log.action,
+          department: log.entity_type || 'System',
+          type: log.action,
+          badge: log.entity_type,
+          statusColor: 'blue',
+          timestamp: log.created_at ? new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
+        })));
+      }
+    } catch (err) {
+      console.warn('Data sync warning:', err.message);
+    } finally {
+      setIsDataLoading(false);
+    }
+  }, []);
+
+  // Restore session on mount & subscribe to auth changes
+  useEffect(() => {
+    let isMounted = true;
+
+    const restoreSession = async () => {
+      try {
+        if (!isSupabaseConfigured) {
+          if (isMounted) setIsAuthLoading(false);
+          return;
+        }
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          if (isMounted) {
+            setAuthSession(null);
+            setAuthProfile(null);
+            setIsAuthLoading(false);
+          }
+          return;
+        }
+
+        if (isMounted) setAuthSession(session);
+
+        try {
+          const profileRes = await authService.getProfile();
+          const profile = profileRes?.data?.profile;
+          if (profile && isMounted) {
+            if (profile.is_active === false) {
+              await supabase.auth.signOut();
+              setAuthSession(null);
+              setAuthProfile(null);
+            } else {
+              applyProfile(profile);
+            }
+          }
+        } catch (err) {
+          console.warn('Session profile fetch warning:', err.message);
+        }
+      } catch (err) {
+        console.error('Session restoration error:', err);
+      } finally {
+        if (isMounted) setIsAuthLoading(false);
+      }
+    };
+
+    restoreSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setAuthSession(null);
+        setAuthProfile(null);
+        setIsAuthLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setAuthSession(session);
+        try {
+          const profileRes = await authService.getProfile();
+          const profile = profileRes?.data?.profile;
+          if (profile && isMounted) {
+            if (profile.is_active === false) {
+              await supabase.auth.signOut();
+              setAuthSession(null);
+              setAuthProfile(null);
+            } else {
+              applyProfile(profile);
+            }
+          }
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Sync real data when authenticated session changes or mounts
+  useEffect(() => {
+    refreshData();
+  }, [authSession?.access_token, refreshData]);
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch {}
+    setAuthSession(null);
+    setAuthProfile(null);
+    setCurrentRoleState('Government');
+    addToast('Logged out of SolutionBridge', 'info');
+  };
+
+  const setCurrentRole = (role) => {
+    setCurrentRoleState(role);
+    addToast(`Switched active workspace to ${role} Portal`, "info");
+    refreshData();
   };
 
   const logActivity = (title, department, type = "Action", badge = "Updated", statusColor = "blue") => {
@@ -109,225 +460,72 @@ export const AppProvider = ({ children }) => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  const setCurrentRole = (role) => {
-    setCurrentRoleState(role);
-    if (role === "Government") {
-      setCurrentUser({
-        name: "Dr. K. Srinivas, IAS",
-        designation: "Principal Secretary & Mission Director",
-        department: "Water Resources & Innovation Mission",
-        role: "Government",
-        email: "dir.innovate@gov.in",
-        avatar: "KS"
-      });
-    } else if (role === "Startup") {
-      setCurrentUser({
-        name: "Dr. Arvind Subramaniam",
-        designation: "Co-Founder & CEO",
-        startupName: "AquaTech Solutions",
-        startupId: "startup-1",
-        role: "Startup",
-        email: "contact@aquatech.io",
-        avatar: "AS"
-      });
-    } else if (role === "Expert" || role === "Expert / Evaluator") {
-      setCurrentRoleState("Expert");
-      setCurrentUser({
-        name: "Dr. Ramesh Chandra",
-        designation: "Chairperson, Technical Screening & Evaluation Committee",
-        institution: "National Innovation Council / IIT Delhi",
-        role: "Expert",
-        email: "r.chandra@nic.in",
-        avatar: "RC"
-      });
-    }
-    addToast(`Switched active workspace to ${role} Portal`, "info");
-  };
-
   // 1. Challenge Handlers
   const publishChallenge = async (challengeData, isDraft = false) => {
-    const newChallenge = {
-      id: `CH-2026-00${challenges.length + 1}`,
-      ...challengeData,
-      status: isDraft ? "Draft" : "Published",
-      applicationsCount: 0
-    };
-    setChallenges(prev => [newChallenge, ...prev]);
-    logActivity(
-      `${isDraft ? "Drafted" : "Published"} Challenge: ${challengeData.title}`,
-      challengeData.department,
-      isDraft ? "Draft Created" : "Challenge Published",
-      isDraft ? "Draft" : "Published",
-      isDraft ? "slate" : "blue"
-    );
-    triggerNotification(
-      "New Challenge Published",
-      `${challengeData.department} announced challenge: ${challengeData.title}`,
-      "Startup",
-      "info"
-    );
-    addToast(isDraft ? "Challenge saved as draft" : "Challenge published successfully!", "success");
-
-    // Asynchronously dispatch to real backend
     try {
-      await challengeService.createChallenge({
+      const response = await challengeService.createChallenge({
         title: challengeData.title,
-        problem_statement: challengeData.problemStatement || challengeData.description,
+        problem_statement: challengeData.problemStatement || challengeData.problemDescription || challengeData.description,
         category: challengeData.category,
+        department_id: challengeData.departmentId || challengeData.department_id,
         technical_requirements: challengeData.technicalRequirements,
         pilot_guidelines: challengeData.pilotGuidelines,
         status: isDraft ? 'draft' : 'published'
       });
-    } catch (err) {
-      console.warn('Backend challenge sync note:', err.message);
-    }
 
-    return newChallenge;
+      const savedChallenge = response?.data?.challenge ? normalizeChallenge(response.data.challenge) : null;
+
+      if (savedChallenge) {
+        setChallenges(prev => [savedChallenge, ...prev.filter(c => c.id !== savedChallenge.id)]);
+      }
+
+      addToast(isDraft ? "Challenge saved as draft" : "Challenge published successfully!", "success");
+      refreshData();
+      return savedChallenge;
+    } catch (err) {
+      addToast(err.message || "Failed to create challenge", "error");
+      throw err;
+    }
   };
 
   // 2. Application Handlers
   const submitApplication = async (appData) => {
-    const newApp = {
-      id: `APP-2026-0${applications.length + 1}`,
-      submittedDate: new Date().toISOString().split('T')[0],
-      status: "Submitted",
-      eligibility: "Under Review",
-      scores: {
-        technicalFeasibility: 0,
-        innovation: 0,
-        costEffectiveness: 0,
-        scalability: 0,
-        risk: 0,
-        overallScore: 0
-      },
-      ...appData
-    };
-    setApplications(prev => [newApp, ...prev]);
-    setChallenges(prev => prev.map(c => c.id === appData.challengeId ? { ...c, applicationsCount: (c.applicationsCount || 0) + 1 } : c));
-    
-    logActivity(
-      `${appData.startupName} applied for ${appData.challengeTitle}`,
-      appData.department,
-      "New Application",
-      "Submitted",
-      "blue"
-    );
-    triggerNotification(
-      "New Application Received",
-      `${appData.startupName} submitted a proposal for '${appData.challengeTitle}'`,
-      "Government",
-      "info"
-    );
-    triggerNotification(
-      "Evaluation Queue Updated",
-      `New proposal by ${appData.startupName} assigned for evaluation.`,
-      "Expert",
-      "info"
-    );
-    addToast("Application submitted successfully!", "success");
-
-    // Asynchronously dispatch to real backend
     try {
-      await applicationService.submitApplication({
-        challenge_id: appData.challengeId,
-        proposal: appData.proposalText || appData.solutionOverview,
-        technical_solution: appData.technicalSolution,
+      const response = await applicationService.submitApplication({
+        challenge_id: appData.challengeId || appData.challenge_id,
+        proposal: appData.proposalText || appData.proposedSolution || appData.solutionOverview || appData.solutionDescription,
+        technical_solution: appData.technicalSolution || appData.technicalApproach,
+        technical_approach: appData.technicalApproach,
+        expected_impact: appData.expectedImpact,
         estimated_cost: appData.estimatedCost
       });
-    } catch (err) {
-      console.warn('Backend application sync note:', err.message);
-    }
 
-    return newApp;
+      const newApp = response?.data?.application ? normalizeApplication(response.data.application) : null;
+      if (newApp) {
+        setApplications(prev => [newApp, ...prev]);
+      }
+
+      addToast("Application submitted successfully!", "success");
+      refreshData();
+      return newApp;
+    } catch (err) {
+      addToast(err.message || "Failed to submit application", "error");
+      throw err;
+    }
   };
 
   const updateApplicationStatus = async (appId, status, recommendation = "") => {
-    setApplications(prev => prev.map(app => {
-      if (app.id === appId) {
-        return {
-          ...app,
-          status,
-          expertRecommendation: recommendation || app.expertRecommendation
-        };
-      }
-      return app;
-    }));
-    const app = applications.find(a => a.id === appId);
-    if (app) {
-      logActivity(
-        `Application ${app.startupName} status updated to: ${status}`,
-        app.department,
-        "Application Updated",
-        status,
-        status === "Selected" || status === "Shortlisted" ? "green" : status === "Rejected" ? "red" : "blue"
-      );
-      triggerNotification(
-        `Application ${status}`,
-        `Your application for '${app.challengeTitle}' is now marked as '${status}'.`,
-        "Startup",
-        status === "Selected" ? "success" : "info"
-      );
-    }
-    addToast(`Application status updated to ${status}`, "success");
-
-    // Asynchronously dispatch to backend
     try {
-      await applicationService.updateStatus(appId, status.toLowerCase().replace(/\s+/g, '_'), recommendation);
+      const normalizedStatus = status.toLowerCase().replace(/\s+/g, '_');
+      await applicationService.updateStatus(appId, normalizedStatus, recommendation);
+      addToast(`Application status updated to ${status}`, "success");
+      refreshData();
     } catch (err) {
-      console.warn('Backend application status sync note:', err.message);
+      addToast(err.message || "Failed to update application status", "error");
     }
   };
 
   const submitExpertEvaluation = async (appId, scores, recommendation, actionType = "Recommend") => {
-    const overall = (
-      (scores.technicalFeasibility * 0.25) +
-      (scores.innovation * 0.20) +
-      (scores.costEffectiveness * 0.20) +
-      (scores.scalability * 0.20) +
-      (scores.risk * 0.15)
-    ).toFixed(2);
-
-    const numericOverall = parseFloat(overall);
-
-    let nextStatus = "Under Evaluation";
-    if (actionType === "Shortlist") nextStatus = "Shortlisted";
-    else if (actionType === "Recommend") nextStatus = "Selected";
-    else if (actionType === "Reject") nextStatus = "Rejected";
-
-    setApplications(prev => prev.map(app => {
-      if (app.id === appId) {
-        return {
-          ...app,
-          status: nextStatus,
-          scores: {
-            ...scores,
-            overallScore: numericOverall
-          },
-          expertRecommendation: recommendation,
-          evaluatedBy: currentUser.name,
-          evaluationDate: new Date().toISOString().split('T')[0]
-        };
-      }
-      return app;
-    }));
-
-    const app = applications.find(a => a.id === appId);
-    logActivity(
-      `Expert score logged for ${app?.startupName || 'Startup'} (${numericOverall}/10)`,
-      app?.department || "Gov",
-      "Evaluation Completed",
-      `Score: ${numericOverall}`,
-      "green"
-    );
-    triggerNotification(
-      "Evaluation Submitted",
-      `${currentUser.name} completed evaluation for ${app?.startupName} (Score: ${numericOverall}/10).`,
-      "Government",
-      "success"
-    );
-    addToast("Evaluation scorecard submitted successfully!", "success");
-
-    // Asynchronously dispatch to backend
     try {
       await applicationService.submitEvaluation(appId, {
         technical_feasibility: scores.technicalFeasibility,
@@ -335,231 +533,175 @@ export const AppProvider = ({ children }) => {
         cost_effectiveness: scores.costEffectiveness,
         scalability: scores.scalability,
         implementation_risk: scores.risk,
-        recommendation,
+        recommendation: recommendation || (actionType === 'Reject' ? 'Reject' : 'Recommend for Pilot'),
         comments: `Action: ${actionType}`
       });
+
+      addToast("Evaluation scorecard submitted successfully!", "success");
+      refreshData();
     } catch (err) {
-      console.warn('Backend evaluation sync note:', err.message);
+      addToast(err.message || "Failed to submit evaluation", "error");
     }
   };
 
   // 3. Pilot & Evidence Handlers
+  const createPilot = async (pilotData) => {
+    try {
+      const response = await pilotService.createPilot({
+        application_id: pilotData.applicationId || pilotData.application_id,
+        location: pilotData.location,
+        duration_days: pilotData.durationDays || pilotData.duration_days,
+        baseline_value: pilotData.baselineValue || pilotData.baseline_value,
+        target_value: pilotData.targetValue || pilotData.target_value,
+        milestones: pilotData.milestones
+      });
+
+      addToast("Sandbox pilot created successfully!", "success");
+      refreshData();
+      return response?.data?.pilot;
+    } catch (err) {
+      addToast(err.message || "Failed to create pilot", "error");
+      throw err;
+    }
+  };
+
   const uploadPilotEvidence = async (pilotId, milestoneId, fileData) => {
-    setPilots(prev => prev.map(pilot => {
-      if (pilot.id === pilotId) {
-        const updatedMilestones = pilot.milestones.map(m => {
-          if (m.id === milestoneId) {
-            const existingEvidence = m.evidence || [];
-            const newEv = {
-              name: fileData.name,
-              date: new Date().toISOString().split('T')[0],
-              type: fileData.type || "Document",
-              status: "Pending Review"
-            };
-            return {
-              ...m,
-              evidence: [newEv, ...existingEvidence]
-            };
-          }
-          return m;
-        });
-        return { ...pilot, milestones: updatedMilestones };
-      }
-      return pilot;
-    }));
-
-    const p = pilots.find(x => x.id === pilotId);
-    logActivity(
-      `Evidence uploaded: ${fileData.name}`,
-      p?.department || "Department",
-      "Evidence Upload",
-      "Pending Review",
-      "blue"
-    );
-    triggerNotification(
-      "New Pilot Evidence Uploaded",
-      `${p?.startupName} uploaded evidence '${fileData.name}' for verification.`,
-      "Expert",
-      "info"
-    );
-    triggerNotification(
-      "Pilot Evidence Submitted",
-      `Evidence file '${fileData.name}' received for ${p?.challengeTitle}.`,
-      "Government",
-      "info"
-    );
-    addToast(`File "${fileData.name}" uploaded successfully for verification`, "success");
-
-    // Asynchronously dispatch to backend
     try {
       await pilotService.uploadEvidence(pilotId, {
         milestone_id: milestoneId,
         file_name: fileData.name,
         evidence_type: fileData.type || 'Document'
       });
+
+      addToast(`Evidence "${fileData.name}" uploaded successfully for verification`, "success");
+      refreshData();
     } catch (err) {
-      console.warn('Backend evidence sync note:', err.message);
+      addToast(err.message || "Failed to upload evidence", "error");
     }
   };
 
-  const verifyEvidence = async (pilotId, milestoneId, fileName, status) => {
-    setPilots(prev => prev.map(pilot => {
-      if (pilot.id === pilotId) {
-        const updatedMilestones = pilot.milestones.map(m => {
-          if (m.id === milestoneId) {
-            const updatedEv = (m.evidence || []).map(ev => {
-              if (ev.name === fileName) {
-                return { ...ev, status };
-              }
-              return ev;
-            });
-            return { ...m, evidence: updatedEv };
-          }
-          return m;
-        });
-        return { ...pilot, milestones: updatedMilestones };
-      }
-      return pilot;
-    }));
-    addToast(`Evidence "${fileName}" marked as ${status}`, "info");
-
+  const verifyEvidence = async (evidenceId, status, comments = '') => {
     try {
-      await pilotService.verifyEvidence(fileName, status.toLowerCase().replace(/\s+/g, '_'));
+      await pilotService.verifyEvidence(evidenceId, status.toLowerCase().replace(/\s+/g, '_'), comments);
+      addToast(`Evidence marked as ${status}`, "info");
+      refreshData();
     } catch (err) {
-      console.warn('Backend verify evidence note:', err.message);
+      addToast(err.message || "Failed to verify evidence", "error");
     }
   };
 
   const submitPilotValidation = async (pilotId, validationStatus, comments) => {
-    setPilots(prev => prev.map(p => {
-      if (p.id === pilotId) {
-        return {
-          ...p,
-          status: validationStatus === "Validated" ? "Validation" : p.status,
-          expertValidation: {
-            expertName: currentUser.name,
-            validationStatus,
-            validationDate: new Date().toISOString().split('T')[0],
-            comments
-          }
-        };
-      }
-      return p;
-    }));
-    const p = pilots.find(x => x.id === pilotId);
-    logActivity(
-      `Pilot validation report submitted for ${p?.startupName} (${validationStatus})`,
-      p?.department || "Gov",
-      "Pilot Validation",
-      validationStatus,
-      validationStatus === "Validated" ? "green" : "orange"
-    );
-    triggerNotification(
-      "Pilot Validation Signed Off",
-      `Final validation for '${p?.challengeTitle}' submitted: ${validationStatus}.`,
-      "Government",
-      validationStatus === "Validated" ? "success" : "warning"
-    );
-    addToast(`Pilot validation result "${validationStatus}" recorded!`, "success");
-
     try {
+      const finalResult = validationStatus === 'Validated' || validationStatus === 'approved' ? 'approved' : 'rejected';
       await pilotService.submitValidation(pilotId, {
-        final_result: validationStatus === 'Validated' ? 'approved' : 'rejected',
+        final_result: finalResult,
+        evidence_verified: true,
+        performance_verified: true,
         comments
       });
+
+      addToast(`Pilot validation recorded: ${validationStatus}!`, "success");
+      refreshData();
     } catch (err) {
-      console.warn('Backend validation sync note:', err.message);
+      addToast(err.message || "Failed to record pilot validation", "error");
     }
   };
 
   // 4. Procurement & Payments Handlers
-  const approveProcurement = async (procurementId) => {
-    setProcurementRecords(prev => prev.map(pr => {
-      if (pr.id === procurementId) {
-        return {
-          ...pr,
-          procurementStatus: "Procured",
-          scaleUpStatus: "Scaled",
-          orderDate: new Date().toISOString().split('T')[0]
-        };
-      }
-      return pr;
-    }));
-    const pr = procurementRecords.find(p => p.id === procurementId);
-    logActivity(
-      `Direct Procurement Approved: ${pr?.solutionName}`,
-      pr?.department || "Gov",
-      "Procurement Approved",
-      "Procured & Scaled",
-      "green"
-    );
-    triggerNotification(
-      "Procurement Contract Executed",
-      `Direct Procurement Order executed for ${pr?.solutionName} (${pr?.contractValue}).`,
-      "Startup",
-      "success"
-    );
-    addToast("Procurement approved and Direct Procurement Order (DPO) issued!", "success");
-
+  const createProcurement = async (procurementData) => {
     try {
-      await procurementService.updateStatus(procurementId, 'approved');
+      const response = await procurementService.createProcurement(procurementData);
+      addToast("Direct Procurement Order issued successfully!", "success");
+      refreshData();
+      return response?.data?.procurement;
     } catch (err) {
-      console.warn('Backend procurement approve note:', err.message);
+      addToast(err.message || "Failed to issue procurement order", "error");
+      throw err;
     }
   };
 
-  const updateMilestonePayment = async (procurementId, milestoneIndex, status) => {
-    setProcurementRecords(prev => prev.map(pr => {
-      if (pr.id === procurementId) {
-        const updated = [...pr.paymentMilestones];
-        if (updated[milestoneIndex]) {
-          updated[milestoneIndex] = { ...updated[milestoneIndex], status };
-        }
-        return { ...pr, paymentMilestones: updated };
-      }
-      return pr;
-    }));
-    addToast(`Milestone payment status updated to ${status}`, "success");
+  const approveProcurement = async (procurementId) => {
+    try {
+      await procurementService.updateStatus(procurementId, 'approved');
+      addToast("Procurement approved and Direct Procurement Order (DPO) issued!", "success");
+      refreshData();
+    } catch (err) {
+      addToast(err.message || "Failed to approve procurement", "error");
+    }
   };
 
-  const markNotificationRead = (id) => {
+  const updateMilestonePayment = async (paymentId, status) => {
+    try {
+      await procurementService.updatePaymentStatus(paymentId, status.toLowerCase());
+      addToast(`Milestone payment status updated to ${status}`, "success");
+      refreshData();
+    } catch (err) {
+      addToast(err.message || "Failed to update payment status", "error");
+    }
+  };
+
+  const markNotificationRead = async (id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, is_read: true } : n));
     try {
-      notificationService.markAsRead(id);
+      await notificationService.markAsRead(id);
     } catch {}
   };
 
-  const markAllNotificationsRead = () => {
+  const markAllNotificationsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true, is_read: true })));
     try {
-      notificationService.markAllAsRead();
+      await notificationService.markAllAsRead();
     } catch {}
   };
+
+  // Computed list of department name strings from database or defaults
+  const DEPARTMENTS = departments.length > 0 
+    ? departments.map(d => d.name)
+    : [
+        "Water Resources Department",
+        "Health & Family Welfare Department",
+        "Municipal Administration & Urban Development",
+        "Agriculture & Farmers Empowerment",
+        "Transport & Urban Mobility Department",
+        "Renewable Energy & Environment"
+      ];
 
   return (
     <AppContext.Provider value={{
       DEPARTMENTS,
       CATEGORIES,
-      STARTUPS,
+      STARTUPS: startups,
       challenges,
       applications,
       pilots,
       procurementRecords,
       notifications,
       recentActivities,
+      departments,
+      startups,
       toasts,
       currentRole,
       currentUser,
       isBackendConnected,
+      isDataLoading,
+      refreshData,
+      authSession,
+      authProfile,
+      isAuthenticated: Boolean(authSession && authProfile),
+      isAuthLoading,
+      applyProfile,
+      logout,
       setCurrentRole,
       addToast,
       publishChallenge,
       submitApplication,
       updateApplicationStatus,
       submitExpertEvaluation,
+      createPilot,
       uploadPilotEvidence,
       verifyEvidence,
       submitPilotValidation,
+      createProcurement,
       approveProcurement,
       updateMilestonePayment,
       markNotificationRead,

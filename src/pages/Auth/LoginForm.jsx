@@ -23,7 +23,7 @@ const LoginForm = ({
   onOpenSupportModal
 }) => {
   const navigate = useNavigate();
-  const { setCurrentRole, addToast } = useApp();
+  const { applyProfile, addToast } = useApp();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,80 +77,152 @@ const LoginForm = ({
        * authService.login() performs:
        * 1. Supabase email/password authentication
        * 2. Backend /auth/me request
-       * 3. Profile/role retrieval
+       * 3. Profile/role retrieval & verification
        */
       const authResult = await authService.login(
         normalizedEmail,
         password
       );
 
-      /*
-       * The stakeholder role must come from the authenticated
-       * user's database profile.
-       *
-       * Never trust the role selected in the login UI.
-       */
-      const backendRole = authResult?.profile?.role
-        || authResult?.role;
+      const profile = authResult?.profile;
 
-      if (!backendRole) {
+      if (!profile) {
         throw new Error(
-          'Your account is authenticated, but no stakeholder role is assigned to your profile. Please contact SolutionBridge Support.'
-        );
-      }
-
-      const normalizedRole = backendRole.toLowerCase();
-
-      const roleMap = {
-        government: 'Government',
-        startup: 'Startup',
-        expert: 'Expert'
-      };
-
-      const detectedRole = roleMap[normalizedRole];
-
-      if (!detectedRole) {
-        throw new Error(
-          'Your account has an invalid stakeholder role. Please contact SolutionBridge Support.'
+          'Your account is authenticated, but no stakeholder profile is assigned. Please contact SolutionBridge Support.'
         );
       }
 
       /*
-       * The role selected on the login page is only UI context.
-       *
-       * The authenticated database role is authoritative.
+       * Check whether the account is active.
        */
-      if (detectedRole !== selectedRole) {
+      if (profile.is_active === false) {
         await authService.logout();
 
         throw new Error(
-          `This account is registered as ${detectedRole}. Please select ${detectedRole} and sign in again.`
+          'Your SolutionBridge account has been deactivated. Please contact an authorized administrator.'
         );
       }
 
       /*
-       * Store the authenticated role globally.
+       * Get the authoritative role from the database.
        */
-      setCurrentRole(detectedRole);
+      const backendRole = (profile.role || '').toLowerCase();
+      const isAdmin = Boolean(profile.is_admin);
 
       /*
-       * Show successful authentication message.
+       * Synchronize the authenticated profile with AppContext.
+       */
+      if (applyProfile) {
+        applyProfile(profile);
+      }
+
+      /*
+       * Normalize the platform selected by the user.
+       *
+       * UI values:
+       * Startup
+       * Government
+       * Expert
+       * Admin
+       */
+      const selectedPlatform = (selectedRole || '').toLowerCase();
+
+      let targetPath = '';
+      let roleDisplayName = '';
+
+      /*
+       * STARTUP LOGIN
+       */
+      if (selectedPlatform === 'startup') {
+        if (backendRole !== 'startup') {
+          throw new Error(
+            'Wrong platform. This account is not registered as a Startup account.'
+          );
+        }
+
+        targetPath = '/startup/overview';
+        roleDisplayName = 'Startup Founder';
+      }
+
+      /*
+       * GOVERNMENT OFFICER LOGIN
+       *
+       * Government officers:
+       * role = government
+       * is_admin = false
+       *
+       * Platform administrators:
+       * role = government
+       * is_admin = true
+       *
+       * Therefore an admin cannot log in through the
+       * Government Officer platform.
+       */
+      else if (selectedPlatform === 'government') {
+        if (backendRole !== 'government' || isAdmin) {
+          throw new Error(
+            'Wrong platform. This account is not registered as a Government Officer account.'
+          );
+        }
+
+        targetPath = '/gov/overview';
+        roleDisplayName = 'Government Officer';
+      }
+
+      /*
+       * EXPERT LOGIN
+       */
+      else if (selectedPlatform === 'expert') {
+        if (backendRole !== 'expert') {
+          throw new Error(
+            'Wrong platform. This account is not registered as an Expert account.'
+          );
+        }
+
+        targetPath = '/expert/overview';
+        roleDisplayName = 'Expert Evaluator';
+      }
+
+      /*
+       * ADMIN LOGIN
+       *
+       * Admin is represented in the database as:
+       * role = government
+       * is_admin = true
+       */
+      else if (selectedPlatform === 'admin') {
+        if (backendRole !== 'government' || !isAdmin) {
+          throw new Error(
+            'Wrong platform. This account is not registered as a Platform Administrator account.'
+          );
+        }
+
+        targetPath = '/admin/overview';
+        roleDisplayName = 'Platform Administrator';
+      }
+
+      /*
+       * Invalid or missing platform selection.
+       */
+      else {
+        throw new Error(
+          'Please select a valid login platform.'
+        );
+      }
+
+      /*
+       * Login successful.
        */
       addToast(
-        `Successfully authenticated as ${detectedRole}`,
+        `Successfully authenticated as ${roleDisplayName}`,
         'success'
       );
 
       /*
-       * Redirect to the existing stakeholder portal.
+       * Redirect only after the selected platform has been
+       * successfully matched with the authenticated account.
        */
-      const portalPaths = {
-        Government: '/gov/overview',
-        Startup: '/startup/overview',
-        Expert: '/expert/overview'
-      };
-
-      navigate(portalPaths[detectedRole], {
+      navigate(targetPath, {
         replace: true
       });
 
@@ -160,40 +232,77 @@ const LoginForm = ({
       let message =
         'Unable to sign in. Please check your email and password.';
 
-      /*
-       * Supabase authentication errors
-       */
       if (err?.message) {
         const lowerMessage = err.message.toLowerCase();
 
-        if (
+        /*
+         * Wrong platform
+         */
+        if (lowerMessage.includes('wrong platform')) {
+          message = err.message;
+        }
+
+        /*
+         * Supabase authentication errors
+         */
+        else if (
           lowerMessage.includes('invalid login credentials')
         ) {
           message =
             'Invalid email or password. Please check your credentials and try again.';
-        } else if (
+        }
+
+        /*
+         * Email confirmation
+         */
+        else if (
           lowerMessage.includes('email not confirmed')
         ) {
           message =
             'Your email address has not been confirmed. Please confirm your email before signing in.';
-        } else if (
+        }
+
+        /*
+         * Rate limiting
+         */
+        else if (
           lowerMessage.includes('too many requests')
         ) {
           message =
             'Too many login attempts. Please wait a moment and try again.';
-        } else if (
+        }
+
+        /*
+         * Profile-related errors
+         */
+        else if (
           lowerMessage.includes('profile')
         ) {
           message = err.message;
-        } else if (
+        }
+
+        /*
+         * Stakeholder-related errors
+         */
+        else if (
           lowerMessage.includes('stakeholder')
         ) {
           message = err.message;
-        } else if (
+        }
+
+        /*
+         * Account-related errors
+         */
+        else if (
           lowerMessage.includes('account')
         ) {
           message = err.message;
-        } else {
+        }
+
+        /*
+         * Other backend/auth errors
+         */
+        else {
           message = err.message;
         }
       }

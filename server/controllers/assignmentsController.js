@@ -10,11 +10,11 @@ import { logger } from '../utils/logger.js';
  */
 export const assignExpertToApplication = async (req, res) => {
   try {
-    const { id: applicationId } = req.params;
-    const { expert_id, notes } = req.body;
+    const applicationId = req.params.id || req.body.application_id || req.body.applicationId;
+    const { expert_id } = req.body;
 
-    if (!expert_id) {
-      return ApiResponse.error(res, 'expert_id is required', 422, 'VALIDATION_ERROR');
+    if (!applicationId || !expert_id) {
+      return ApiResponse.error(res, 'application_id and expert_id are required', 422, 'VALIDATION_ERROR');
     }
 
     // 1. Verify application exists
@@ -28,14 +28,26 @@ export const assignExpertToApplication = async (req, res) => {
       return ApiResponse.error(res, 'Application not found', 404, 'NOT_FOUND');
     }
 
-    // 2. Verify expert exists
-    const { data: expert, error: expertError } = await supabaseAdmin
+    // 2. Verify expert exists (by expert id or user_id)
+    let expert = null;
+    const { data: expById } = await supabaseAdmin
       .from('experts')
-      .select('id, profile_id, profiles(full_name, email)')
+      .select('id, user_id, profiles(full_name, email)')
       .eq('id', expert_id)
-      .single();
+      .maybeSingle();
 
-    if (expertError || !expert) {
+    if (expById) {
+      expert = expById;
+    } else {
+      const { data: expByUser } = await supabaseAdmin
+        .from('experts')
+        .select('id, user_id, profiles(full_name, email)')
+        .eq('user_id', expert_id)
+        .maybeSingle();
+      if (expByUser) expert = expByUser;
+    }
+
+    if (!expert) {
       return ApiResponse.error(res, 'Expert not found', 404, 'NOT_FOUND');
     }
 
@@ -44,7 +56,7 @@ export const assignExpertToApplication = async (req, res) => {
       .from('expert_assignments')
       .select('id')
       .eq('application_id', applicationId)
-      .eq('expert_id', expert_id)
+      .eq('expert_id', expert.id)
       .maybeSingle();
 
     if (existing) {
@@ -57,9 +69,9 @@ export const assignExpertToApplication = async (req, res) => {
       .insert([
         {
           application_id: applicationId,
-          expert_id,
+          expert_id: expert.id,
           assigned_by: req.user.id,
-          notes: notes || null,
+          status: 'assigned',
           created_at: new Date().toISOString()
         }
       ])
@@ -81,9 +93,9 @@ export const assignExpertToApplication = async (req, res) => {
     });
 
     // 6. Notify Expert
-    if (expert.profile_id) {
+    if (expert.user_id) {
       await createNotification({
-        userId: expert.profile_id,
+        userId: expert.user_id,
         role: 'expert',
         title: 'New Proposal Assigned for Evaluation',
         message: `You have been assigned to evaluate a proposal by ${app.startups?.name} for '${app.challenges?.title}'.`,

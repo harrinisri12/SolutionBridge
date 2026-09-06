@@ -21,7 +21,7 @@ const ScaleDecision = () => {
     // 1. KPI Achievement average
     let kpiRatesSum = 0;
     let loggedKpis = 0;
-    pilot.kpis.forEach(k => {
+    (pilot.kpis || []).forEach(k => {
       const baseline = parseFloat(k.baseline) || 0;
       const target = parseFloat(k.target) || 0;
       const actual = parseFloat(k.actual);
@@ -39,11 +39,12 @@ const ScaleDecision = () => {
       }
     });
 
-    const kpiRateAvg = loggedKpis > 0 ? (kpiRatesSum / loggedKpis) : 80; // Default demo score
+    const kpiRateAvg = loggedKpis > 0 ? (kpiRatesSum / loggedKpis) : 80;
 
     // 2. Validation Multiplier
-    const validationScore = pilot.validationDetails.status === "Verified" ? 100 : 
-                            pilot.validationDetails.status === "Not Verified" ? 40 : 70;
+    const valStatus = pilot.validationDetails?.status;
+    const validationScore = valStatus === "Verified" || valStatus === "Validated" ? 100 : 
+                            valStatus === "Not Verified" || valStatus === "Rejected" ? 40 : 70;
 
     // 3. Other sub-scores (Static mock metrics for realism)
     const securityScore = 95;

@@ -16,7 +16,7 @@ export const listPilots = async (req, res) => {
 
     let query = supabaseAdmin
       .from('pilots')
-      .select('*, challenges(id, title, category, budget, government_departments(name)), startups(id, name, dpiit_number, sector, verified), pilot_milestones(*), validations(*)')
+      .select('*, applications(id, challenge_id, proposal, estimated_cost, challenges(id, title, category, department_id, government_departments(name))), startups(id, name, dpiit_number, sector, verified), pilot_milestones(*), validations(*)')
       .order('created_at', { ascending: false });
 
     // Scoping for startups
@@ -24,7 +24,7 @@ export const listPilots = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!startup) {
@@ -33,11 +33,11 @@ export const listPilots = async (req, res) => {
 
       query = query.eq('startup_id', startup.id);
     } else if (user.role === 'expert') {
-      // Find pilots assigned to expert
+      // Find pilots assigned to expert (via expert_assignments or validations)
       const { data: expert } = await supabaseAdmin
         .from('experts')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!expert) {
@@ -45,17 +45,29 @@ export const listPilots = async (req, res) => {
       }
 
       const { data: assignments } = await supabaseAdmin
-        .from('pilot_expert_assignments')
+        .from('expert_assignments')
+        .select('application_id')
+        .eq('expert_id', expert.id);
+
+      const assignedAppIds = (assignments || []).map((a) => a.application_id);
+
+      const { data: expertValidations } = await supabaseAdmin
+        .from('validations')
         .select('pilot_id')
         .eq('expert_id', expert.id);
 
-      const assignedPilotIds = (assignments || []).map((a) => a.pilot_id);
+      const validatedPilotIds = (expertValidations || []).map((v) => v.pilot_id);
 
-      if (assignedPilotIds.length === 0) {
+      if (assignedAppIds.length === 0 && validatedPilotIds.length === 0) {
         return ApiResponse.success(res, { pilots: [] }, 'No assigned pilots');
       }
 
-      query = query.in('id', assignedPilotIds);
+      // Filter by application_id in assignedAppIds or id in validatedPilotIds
+      if (assignedAppIds.length > 0) {
+        query = query.in('application_id', assignedAppIds);
+      } else {
+        query = query.in('id', validatedPilotIds);
+      }
     }
 
     if (status) {
@@ -96,7 +108,7 @@ export const getPilotById = async (req, res) => {
 
     const { data: pilot, error } = await supabaseAdmin
       .from('pilots')
-      .select('*, challenges(*, government_departments(name, ministry)), startups(*, profiles(full_name, email, phone)), pilot_milestones(*, pilot_evidence(*)), pilot_telemetry(*), validations(*, experts(id, specialization, institution, profiles(full_name, email)))')
+      .select('*, applications(*, challenges(*, government_departments(name))), startups(*, profiles(full_name, email, phone)), pilot_milestones(*, pilot_evidence(*)), pilot_telemetry(*), validations(*, experts(id, expertise, organization, profiles(full_name, email)))')
       .eq('id', id)
       .single();
 
@@ -106,7 +118,7 @@ export const getPilotById = async (req, res) => {
 
     // Verification check for startup ownership
     if (user.role === 'startup') {
-      const { data: startup } = await supabaseAdmin.from('startups').select('id').eq('profile_id', user.id).maybeSingle();
+      const { data: startup } = await supabaseAdmin.from('startups').select('id').eq('user_id', user.id).maybeSingle();
       if (!startup || startup.id !== pilot.startup_id) {
         return ApiResponse.error(res, 'Access forbidden to this pilot', 403, 'FORBIDDEN');
       }
@@ -147,11 +159,11 @@ export const getPilotPerformance = async (req, res) => {
 
     const performanceData = {
       pilotId: pilot.id,
-      metricName: pilot.primary_metric || 'Operational Efficacy',
+      metricName: 'Operational Efficacy',
       baseline: pilot.baseline_value,
       target: pilot.target_value,
       actual: pilot.actual_value,
-      unit: pilot.metric_unit || '%',
+      unit: '%',
       performancePercentage: performancePct,
       milestoneProgress,
       status: pilot.status,
@@ -179,9 +191,6 @@ export const createPilot = async (req, res) => {
       duration_days,
       baseline_value,
       target_value,
-      metric_unit,
-      primary_metric,
-      budget,
       milestones
     } = req.body;
 
@@ -192,7 +201,7 @@ export const createPilot = async (req, res) => {
     // 1. Verify application is selected
     const { data: application, error: appError } = await supabaseAdmin
       .from('applications')
-      .select('*, challenges(id, department_id, title), startups(id, name, profile_id)')
+      .select('*, challenges(id, department_id, title), startups(id, name, user_id)')
       .eq('id', application_id)
       .single();
 
@@ -215,24 +224,19 @@ export const createPilot = async (req, res) => {
       .insert([
         {
           application_id,
-          challenge_id: application.challenge_id,
           department_id: application.challenges?.department_id,
           startup_id: application.startup_id,
-          created_by: userId,
           location: location || 'Municipal Pilot Zone',
           duration_days: duration_days ? Number(duration_days) : 180,
           baseline_value: baseline_value !== undefined ? Number(baseline_value) : null,
           target_value: target_value !== undefined ? Number(target_value) : null,
-          metric_unit: metric_unit || '%',
-          primary_metric: primary_metric || 'Key Operational KPI',
-          budget: budget || application.estimated_cost,
           status: 'approved',
           progress: 0,
           started_at: new Date().toISOString(),
           created_at: new Date().toISOString()
         }
       ])
-      .select('*, challenges(title), startups(name)')
+      .select('*, startups(name)')
       .single();
 
     if (pilotError) {
@@ -246,10 +250,8 @@ export const createPilot = async (req, res) => {
         pilot_id: pilot.id,
         title: m.title || `Milestone ${idx + 1}`,
         description: m.description || null,
-        budget_share: m.budget_share ? Number(m.budget_share) : null,
-        progress: 0,
+        target_date: m.target_date || null,
         status: 'pending',
-        sequence_order: idx + 1,
         created_at: new Date().toISOString()
       }));
 
@@ -266,9 +268,9 @@ export const createPilot = async (req, res) => {
     });
 
     // 5. Notify Startup Founder
-    if (application.startups?.profile_id) {
+    if (application.startups?.user_id) {
       await createNotification({
-        userId: application.startups.profile_id,
+        userId: application.startups.user_id,
         role: 'startup',
         title: 'Pilot Deployment Approved!',
         message: `Government approved sandbox pilot for '${application.challenges?.title}'. You can now deploy and submit milestone evidence.`,
@@ -297,9 +299,7 @@ export const updatePilotStatus = async (req, res) => {
       return ApiResponse.error(res, `Status must be one of: ${validStatuses.join(', ')}`, 422, 'VALIDATION_ERROR');
     }
 
-    const updates = {
-      updated_at: new Date().toISOString()
-    };
+    const updates = {};
     if (status) updates.status = status.toLowerCase();
     if (actual_value !== undefined) updates.actual_value = Number(actual_value);
     if (progress !== undefined) updates.progress = Number(progress);
@@ -309,7 +309,7 @@ export const updatePilotStatus = async (req, res) => {
       .from('pilots')
       .update(updates)
       .eq('id', id)
-      .select('*, startups(name, profile_id), challenges(title)')
+      .select('*, startups(name, user_id), applications(challenge_id, challenges(title))')
       .single();
 
     if (error || !pilot) {

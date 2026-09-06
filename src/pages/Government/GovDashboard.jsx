@@ -45,9 +45,9 @@ const GovDashboard = () => {
 
   // Budgets per Pilot Chart
   const pilotBudgetData = pilots.map(p => ({
-    name: p.startupName.split(' ')[0],
-    budget: p.budget,
-    milestonePaid: p.milestones.reduce((sum, m) => m.status === 'Paid' ? sum + m.budgetShare : sum, 0)
+    name: (p.startupName || 'Startup').split(' ')[0],
+    budget: p.budget || 0,
+    milestonePaid: p.milestones ? p.milestones.reduce((sum, m) => m.status === 'Paid' || m.status === 'completed' ? sum + (m.budgetShare || 0) : sum, 0) : 0
   }));
 
 

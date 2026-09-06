@@ -15,7 +15,7 @@ const KpiTracker = () => {
 
   const handleEditClick = () => {
     if (!activePilot) return;
-    setEditingKpis(activePilot.kpis.map(k => ({ ...k })));
+    setEditingKpis((activePilot.kpis || []).map(k => ({ ...k })));
     setIsEditing(true);
   };
 

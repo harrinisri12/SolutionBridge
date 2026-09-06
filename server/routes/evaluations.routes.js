@@ -22,8 +22,11 @@ router.get('/applications/:id/experts', asyncHandler(listApplicationExperts));
 router.delete('/applications/:id/experts/:expertId', requireRole('government'), asyncHandler(removeExpertAssignment));
 
 // 2. Expert Evaluations
+router.post('/', requireRole('expert'), asyncHandler(submitEvaluation));
+router.get('/', asyncHandler(getEvaluationsByApplication));
 router.post('/applications/:id/evaluations', requireRole('expert'), asyncHandler(submitEvaluation));
 router.get('/applications/:id/evaluations', asyncHandler(getEvaluationsByApplication));
+router.put('/:id', requireRole('expert'), asyncHandler(updateEvaluation));
 router.put('/evaluations/:id', requireRole('expert'), asyncHandler(updateEvaluation));
 
 export default router;

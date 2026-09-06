@@ -25,67 +25,72 @@ const GovOverview = () => {
   const { challenges, applications, pilots, procurementRecords, recentActivities } = useApp();
   const navigate = useNavigate();
 
-  // Statistic calculation or fallback to exact prompt values:
-  // 12 Active Challenges, 86 Applications, 7 Pilots in Progress, 14 Completed Pilots, 5 Solutions Procured
-  const activeChallengesCount = 12;
-  const applicationsCount = 86;
-  const pilotsInProgressCount = 7;
-  const completedPilotsCount = 14;
-  const solutionsProcuredCount = 5;
+  // Dynamic Statistic calculation based on live Supabase data:
+  const activeChallengesCount = challenges.filter(c => c.status === 'published' || c.status === 'active' || c.status === 'open').length;
+  const applicationsCount = applications.length;
+  const pilotsInProgressCount = pilots.filter(p => p.status === 'in_progress' || p.status === 'active' || p.status === 'validation' || p.status === 'ongoing').length;
+  const completedPilotsCount = pilots.filter(p => p.status === 'completed' || p.status === 'scaled' || p.status === 'validated').length;
+  const solutionsProcuredCount = procurementRecords.length;
 
-  // Chart 1: Challenge / Application Activity Chart
+  // Real Dynamic Chart 1: Challenge / Application Activity Chart
   const activityChartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+    labels: ['Total Challenges', 'Drafts', 'Published', 'Applications', 'Selected', 'Pilots'],
     datasets: [
       {
-        label: 'Applications Received',
-        data: [12, 18, 24, 38, 52, 64, 76, 86],
+        label: 'Live Metrics Volume',
+        data: [
+          challenges.length,
+          challenges.filter(c => c.status === 'draft').length,
+          activeChallengesCount,
+          applicationsCount,
+          applications.filter(a => a.status === 'selected' || a.status === 'Selected').length,
+          pilots.length
+        ],
         backgroundColor: '#2563eb',
         borderColor: '#1d4ed8',
         borderWidth: 1,
         borderRadius: 4
-      },
-      {
-        label: 'Challenges Published',
-        data: [2, 3, 5, 7, 9, 10, 11, 12],
-        backgroundColor: '#0f2942',
-        borderColor: '#0a1b2d',
-        borderWidth: 1,
-        borderRadius: 4
       }
     ]
   };
 
-  // Chart 2: Pilot Progress by Category
+  // Real Dynamic Chart 2: Pilot Progress by Category
+  const categoriesList = ['Water', 'Healthcare', 'Transport', 'Agriculture', 'Energy', 'Waste Management'];
   const pilotProgressChartData = {
-    labels: ['Water & Sanitation', 'Healthcare', 'Transport & ITS', 'Agriculture IoT', 'Waste Recovery', 'Clean Energy'],
+    labels: categoriesList,
     datasets: [
       {
-        label: 'Completed Pilots',
-        data: [4, 3, 3, 2, 1, 1],
+        label: 'Completed / Validated',
+        data: categoriesList.map(cat => pilots.filter(p => (p.category || '').toLowerCase().includes(cat.toLowerCase()) && (p.status === 'completed' || p.status === 'scaled' || p.status === 'validated')).length),
         backgroundColor: '#059669',
         borderRadius: 4
       },
       {
-        label: 'Ongoing / Validation Pilots',
-        data: [2, 2, 1, 1, 1, 0],
+        label: 'Active Field Pilots',
+        data: categoriesList.map(cat => pilots.filter(p => (p.category || '').toLowerCase().includes(cat.toLowerCase()) && (p.status !== 'completed' && p.status !== 'scaled' && p.status !== 'validated')).length),
         backgroundColor: '#2563eb',
         borderRadius: 4
       }
     ]
   };
 
-  // Chart 3: Procurement Outcome Chart
+  // Real Dynamic Chart 3: Procurement Outcome Chart
   const procurementChartData = {
-    labels: ['Scaled Across State', 'Procured (DPO Executed)', 'Procurement in Progress', 'Under Committee Review'],
+    labels: ['Completed Orders', 'In Progress', 'Under Review'],
     datasets: [
       {
-        data: [5, 4, 3, 2],
-        backgroundColor: ['#059669', '#2563eb', '#d97706', '#64748b'],
+        data: [
+          procurementRecords.filter(p => p.procurementStatus === 'Procured' || p.procurementStatus === 'Scaled' || p.status === 'approved' || p.status === 'paid').length,
+          procurementRecords.filter(p => p.procurementStatus === 'Procurement in Progress' || p.status === 'pending' || p.status === 'in_progress').length,
+          procurementRecords.filter(p => p.procurementStatus === 'Approved' || p.status === 'draft').length
+        ],
+        backgroundColor: ['#059669', '#2563eb', '#d97706'],
         borderWidth: 0
       }
     ]
   };
+
+  const highlightPilot = pilots.find(p => p.status === 'in_progress' || p.status === 'active' || p.status === 'validation') || pilots[0];
 
   return (
     <div className="space-y-6">
@@ -283,26 +288,34 @@ const GovOverview = () => {
               <Zap className="w-3 h-3 text-blue-400" />
               <span>Active Pilot Highlight</span>
             </div>
-            <h4 className="text-base font-bold text-white">
-              AquaTech Solutions • Varanasi Water Works
-            </h4>
-            <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
-              25 spectrophotometric nodes deployed across 5 reservoirs. Milestone 4 alert latency verified at <strong>8.5 minutes</strong> (Target: &lt;15 min).
-            </p>
+            {highlightPilot ? (
+              <>
+                <h4 className="text-base font-bold text-white">
+                  {highlightPilot.startupName || 'Startup Pilot'} • {highlightPilot.location || highlightPilot.department || 'Field Trial'}
+                </h4>
+                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  {highlightPilot.challengeTitle || 'Pilot field deployment underway.'}
+                </p>
 
-            <div className="mt-4 p-3 bg-slate-800/80 rounded-lg border border-slate-700 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-300">
-                <span>Overall Progress</span>
-                <span className="font-bold text-emerald-400">88% (Validation)</span>
+                <div className="mt-4 p-3 bg-slate-800/80 rounded-lg border border-slate-700 space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Overall Progress</span>
+                    <span className="font-bold text-emerald-400">{highlightPilot.overallProgress || highlightPilot.progress || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${highlightPilot.overallProgress || highlightPilot.progress || 0}%` }} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 text-center text-slate-400 text-xs">
+                No active pilot deployments found.
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '88%' }} />
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Independent Audit Signed</span>
+            <span className="text-xs text-slate-400">Live Pilot Console</span>
             <Button
               variant="secondary"
               size="sm"

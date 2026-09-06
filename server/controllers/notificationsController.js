@@ -10,11 +10,11 @@ export const listNotifications = async (req, res) => {
   try {
     const { id: userId, role } = req.user;
 
-    // Fetch user-specific notifications OR role-targeted notifications
+    // Fetch user-specific notifications
     const { data: notifications, error } = await supabaseAdmin
       .from('notifications')
       .select('*')
-      .or(`user_id.eq.${userId},and(user_id.is.null,role.eq.${role}),role.eq.all`)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);
 

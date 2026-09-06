@@ -124,21 +124,17 @@ export const createChallenge = async (req, res) => {
     const userId = req.user.id;
     const userDept = req.user.department_id;
 
-    const {
-      title,
-      problem_statement,
-      category,
-      department_id,
-      budget,
-      budget_numeric,
-      deadline,
-      pilot_duration,
-      location,
-      technical_requirements,
-      pilot_guidelines,
-      eligibility_criteria,
-      status = 'published'
-    } = req.body;
+    const title = req.body.title;
+    const problem_statement = req.body.problem_statement || req.body.problemStatement;
+    const category = req.body.category || req.body.sector || 'General';
+    const department_id = req.body.department_id || req.body.departmentId;
+    const technical_requirements = req.body.technical_requirements || req.body.technicalRequirements || '';
+    const pilot_guidelines = req.body.pilot_guidelines || req.body.pilotGuidelines || '';
+    const status = (req.body.status || 'published').toLowerCase();
+    const eligibility_criteria = req.body.eligibility_criteria || req.body.eligibilityCriteria || '';
+    const location = req.body.location || '';
+    const pilot_duration = req.body.pilot_duration || req.body.pilotDuration || '';
+    const budget = req.body.budget || '';
 
     if (!title || !problem_statement) {
       return ApiResponse.error(
@@ -149,8 +145,30 @@ export const createChallenge = async (req, res) => {
       );
     }
 
-    const targetDept = department_id || userDept;
+    let targetDept = department_id || userDept;
+    if (!targetDept) {
+      const { data: defaultDept } = await supabaseAdmin
+        .from('government_departments')
+        .select('id')
+        .limit(1)
+        .single();
+      if (defaultDept) targetDept = defaultDept.id;
+    }
+
     const isPublished = status.toLowerCase() === 'published';
+
+    // Combine any supplementary fields into technical_requirements and pilot_guidelines
+    const techReqCombined = [
+      technical_requirements || '',
+      eligibility_criteria ? `\n\nEligibility: ${eligibility_criteria}` : ''
+    ].filter(Boolean).join('\n');
+
+    const pilotGuidelinesCombined = [
+      pilot_guidelines || '',
+      location ? `\nLocation: ${location}` : '',
+      pilot_duration ? `\nDuration: ${pilot_duration}` : '',
+      budget ? `\nBudget: ${budget}` : ''
+    ].filter(Boolean).join('\n');
 
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
@@ -161,16 +179,8 @@ export const createChallenge = async (req, res) => {
           category: category || 'General',
           department_id: targetDept,
           created_by: userId,
-          budget: budget || null,
-          budget_numeric: budget_numeric
-            ? Number(budget_numeric)
-            : null,
-          deadline: deadline || null,
-          pilot_duration: pilot_duration || '6 Months',
-          location: location || null,
-          technical_requirements: technical_requirements || null,
-          pilot_guidelines: pilot_guidelines || null,
-          eligibility_criteria: eligibility_criteria || null,
+          technical_requirements: techReqCombined || null,
+          pilot_guidelines: pilotGuidelinesCombined || null,
           status: isPublished ? 'published' : 'draft',
           published_at: isPublished
             ? new Date().toISOString()
@@ -244,53 +254,22 @@ export const updateChallenge = async (req, res) => {
       title,
       problem_statement,
       category,
-      budget,
-      budget_numeric,
-      deadline,
-      pilot_duration,
-      location,
       technical_requirements,
-      pilot_guidelines,
-      eligibility_criteria
+      pilot_guidelines
     } = req.body;
 
-    const updates = {
-      updated_at: new Date().toISOString()
-    };
+    const updates = {};
 
     if (title) updates.title = title.trim();
     if (problem_statement) {
       updates.problem_statement = problem_statement.trim();
     }
     if (category) updates.category = category;
-    if (budget !== undefined) updates.budget = budget;
-
-    if (budget_numeric !== undefined) {
-      updates.budget_numeric = Number(budget_numeric);
-    }
-
-    if (deadline !== undefined) {
-      updates.deadline = deadline;
-    }
-
-    if (pilot_duration !== undefined) {
-      updates.pilot_duration = pilot_duration;
-    }
-
-    if (location !== undefined) {
-      updates.location = location;
-    }
-
     if (technical_requirements !== undefined) {
       updates.technical_requirements = technical_requirements;
     }
-
     if (pilot_guidelines !== undefined) {
       updates.pilot_guidelines = pilot_guidelines;
-    }
-
-    if (eligibility_criteria !== undefined) {
-      updates.eligibility_criteria = eligibility_criteria;
     }
 
     const { data: challenge, error } = await supabaseAdmin
@@ -403,8 +382,7 @@ export const closeChallenge = async (req, res) => {
     const { data: challenge, error } = await supabaseAdmin
       .from('challenges')
       .update({
-        status: 'closed',
-        closed_at: new Date().toISOString()
+        status: 'closed'
       })
       .eq('id', id)
       .select()

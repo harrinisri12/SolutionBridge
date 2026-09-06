@@ -3,33 +3,46 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
-  Target,
-  FileCheck2,
-  Zap,
-  CheckCircle2,
   ClipboardList,
   ShieldCheck,
   CreditCard,
   LogOut,
   Building2,
   Rocket,
-  UserCheck,
-  Shield
+  Shield,
+  ShieldAlert,
+  UserCog,
+  ScrollText,
+  Target,
+  FileCheck2,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 
 const Sidebar = () => {
-  const { currentRole, currentUser, setCurrentRole } = useApp();
+  const { currentRole, currentUser, authProfile, logout } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // STRICT Prompt Compliance Navigation Divisions:
+  // STRICT Navigation Divisions:
+  // Admin: platform administration only
   // Government: 5 divisions
   // Startup: 4 divisions
   // Expert: 3 divisions
   const getNavItems = () => {
     switch (currentRole) {
+      case 'Admin':
+        return [
+          { name: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
+          { name: 'Government Officers', path: '/admin/government-officers', icon: UserCog },
+          { name: 'Experts', path: '/admin/experts', icon: ShieldCheck },
+          { name: 'Startups', path: '/admin/startups', icon: Rocket },
+          { name: 'Departments', path: '/admin/departments', icon: Building2 },
+          { name: 'Audit Logs', path: '/admin/audit-logs', icon: ScrollText }
+        ];
       case 'Government':
         return [
+          ...(authProfile?.is_admin ? [{ name: 'Platform Admin', path: '/admin/overview', icon: ShieldAlert }] : []),
           { name: 'Overview', path: '/gov/overview', icon: LayoutDashboard },
           { name: 'Challenges', path: '/gov/challenges', icon: Target },
           { name: 'Applications & Evaluation', path: '/gov/applications', icon: FileCheck2 },
@@ -56,7 +69,10 @@ const Sidebar = () => {
 
   const navItems = getNavItems();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (logout) {
+      await logout();
+    }
     navigate('/login');
   };
 

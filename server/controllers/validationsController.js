@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
 export const assignExpertToPilot = async (req, res) => {
   try {
     const { pilotId } = req.params;
-    const { expert_id, notes } = req.body;
+    const { expert_id } = req.body;
 
     if (!expert_id) {
       return ApiResponse.error(res, 'expert_id is required', 422, 'VALIDATION_ERROR');
@@ -20,7 +20,7 @@ export const assignExpertToPilot = async (req, res) => {
     // 1. Verify pilot exists
     const { data: pilot, error: pilotError } = await supabaseAdmin
       .from('pilots')
-      .select('id, startups(name), challenges(title)')
+      .select('id, application_id, startups(name), applications(challenges(title))')
       .eq('id', pilotId)
       .single();
 
@@ -31,7 +31,7 @@ export const assignExpertToPilot = async (req, res) => {
     // 2. Verify expert exists
     const { data: expert, error: expertError } = await supabaseAdmin
       .from('experts')
-      .select('id, profile_id, profiles(full_name, email)')
+      .select('id, user_id, profiles(full_name, email)')
       .eq('id', expert_id)
       .single();
 
@@ -39,59 +39,49 @@ export const assignExpertToPilot = async (req, res) => {
       return ApiResponse.error(res, 'Expert not found', 404, 'NOT_FOUND');
     }
 
-    // 3. Prevent duplicate assignment
-    const { data: existing } = await supabaseAdmin
-      .from('pilot_expert_assignments')
-      .select('id')
-      .eq('pilot_id', pilotId)
-      .eq('expert_id', expert_id)
-      .maybeSingle();
+    // 3. Create assignment on application_id if not exists
+    if (pilot.application_id) {
+      const { data: existing } = await supabaseAdmin
+        .from('expert_assignments')
+        .select('id')
+        .eq('application_id', pilot.application_id)
+        .eq('expert_id', expert_id)
+        .maybeSingle();
 
-    if (existing) {
-      return ApiResponse.error(res, 'This expert is already assigned to this pilot', 409, 'ALREADY_ASSIGNED');
+      if (!existing) {
+        await supabaseAdmin.from('expert_assignments').insert([
+          {
+            application_id: pilot.application_id,
+            expert_id,
+            assigned_by: req.user.id,
+            status: 'assigned',
+            created_at: new Date().toISOString()
+          }
+        ]);
+      }
     }
 
-    // 4. Create assignment
-    const { data: assignment, error: assignError } = await supabaseAdmin
-      .from('pilot_expert_assignments')
-      .insert([
-        {
-          pilot_id: pilotId,
-          expert_id,
-          assigned_by: req.user.id,
-          notes: notes || null,
-          created_at: new Date().toISOString()
-        }
-      ])
-      .select('*, experts(*, profiles(full_name, email))')
-      .single();
-
-    if (assignError) {
-      logger.error('Error assigning expert to pilot', assignError);
-      return ApiResponse.error(res, 'Failed to assign expert to pilot', 500, 'SERVER_ERROR');
-    }
-
-    // 5. Audit Log
+    // 4. Audit Log
     await logAudit({
       userId: req.user.id,
       action: AuditActions.EXPERT_ASSIGNED,
-      entityType: 'pilot_expert_assignment',
-      entityId: assignment.id,
+      entityType: 'validation_assignment',
+      entityId: pilotId,
       description: `Assigned expert '${expert.profiles?.full_name}' to validate pilot for '${pilot.startups?.name}'`
     });
 
-    // 6. Notify Expert
-    if (expert.profile_id) {
+    // 5. Notify Expert
+    if (expert.user_id) {
       await createNotification({
-        userId: expert.profile_id,
+        userId: expert.user_id,
         role: 'expert',
         title: 'Assigned to Pilot Validation',
-        message: `You have been appointed to audit and validate the pilot for '${pilot.challenges?.title}'.`,
+        message: `You have been appointed to audit and validate the pilot for '${pilot.applications?.challenges?.title || 'Sandbox Pilot'}'.`,
         type: 'info'
       });
     }
 
-    return ApiResponse.success(res, { assignment }, 'Expert assigned to pilot successfully', 201);
+    return ApiResponse.success(res, { success: true }, 'Expert assigned to pilot successfully', 201);
   } catch (error) {
     logger.error('Error in assignExpertToPilot controller', error);
     return ApiResponse.error(res, 'Failed to assign expert', 500, 'SERVER_ERROR');
@@ -106,10 +96,20 @@ export const listPilotExperts = async (req, res) => {
   try {
     const { pilotId } = req.params;
 
+    const { data: pilot } = await supabaseAdmin
+      .from('pilots')
+      .select('application_id')
+      .eq('id', pilotId)
+      .single();
+
+    if (!pilot || !pilot.application_id) {
+      return ApiResponse.success(res, { assignments: [] }, 'No expert assignments found');
+    }
+
     const { data: assignments, error } = await supabaseAdmin
-      .from('pilot_expert_assignments')
+      .from('expert_assignments')
       .select('*, experts(*, profiles(full_name, email, phone, organization))')
-      .eq('pilot_id', pilotId);
+      .eq('application_id', pilot.application_id);
 
     if (error) {
       logger.error('Error fetching pilot expert assignments', error);
@@ -131,15 +131,18 @@ export const removePilotExpertAssignment = async (req, res) => {
   try {
     const { pilotId, expertId } = req.params;
 
-    const { error } = await supabaseAdmin
-      .from('pilot_expert_assignments')
-      .delete()
-      .eq('pilot_id', pilotId)
-      .eq('expert_id', expertId);
+    const { data: pilot } = await supabaseAdmin
+      .from('pilots')
+      .select('application_id')
+      .eq('id', pilotId)
+      .single();
 
-    if (error) {
-      logger.error('Error removing expert from pilot', error);
-      return ApiResponse.error(res, 'Failed to remove expert assignment', 500, 'SERVER_ERROR');
+    if (pilot?.application_id) {
+      await supabaseAdmin
+        .from('expert_assignments')
+        .delete()
+        .eq('application_id', pilot.application_id)
+        .eq('expert_id', expertId);
     }
 
     return ApiResponse.success(res, { success: true }, 'Pilot expert assignment removed');
@@ -165,26 +168,34 @@ export const submitPilotValidation = async (req, res) => {
     } = req.body;
 
     // 1. Verify expert identity
-    const { data: expert, error: expertError } = await supabaseAdmin
+    let { data: expert } = await supabaseAdmin
       .from('experts')
-      .select('id, profile_id, profiles(full_name)')
-      .eq('profile_id', userId)
-      .single();
+      .select('id, user_id, profiles(full_name)')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (expertError || !expert) {
+    if (!expert) {
+      const { data: byId } = await supabaseAdmin
+        .from('experts')
+        .select('id, user_id, profiles(full_name)')
+        .eq('id', userId)
+        .maybeSingle();
+      if (byId) expert = byId;
+    }
+
+    if (!expert) {
       return ApiResponse.error(res, 'Expert profile not found', 403, 'EXPERT_REQUIRED');
     }
 
-    // 2. Verify expert is assigned to this pilot
-    const { data: assignment, error: assignError } = await supabaseAdmin
-      .from('pilot_expert_assignments')
-      .select('id')
-      .eq('pilot_id', pilotId)
-      .eq('expert_id', expert.id)
-      .maybeSingle();
+    // 2. Verify pilot exists
+    const { data: pilot, error: pilotError } = await supabaseAdmin
+      .from('pilots')
+      .select('id, application_id, startups(name, user_id), applications(challenges(title))')
+      .eq('id', pilotId)
+      .single();
 
-    if (assignError || !assignment) {
-      return ApiResponse.error(res, 'You are not assigned to validate this pilot', 403, 'NOT_ASSIGNED_TO_PILOT');
+    if (pilotError || !pilot) {
+      return ApiResponse.error(res, 'Pilot not found', 404, 'NOT_FOUND');
     }
 
     const validResults = ['approved', 'needs_improvement', 'rejected'];
@@ -206,7 +217,7 @@ export const submitPilotValidation = async (req, res) => {
           signed_at: new Date().toISOString()
         }
       ])
-      .select('*, pilots(startup_id, startups(name, profile_id), challenges(title))')
+      .select()
       .single();
 
     if (valError) {
@@ -220,14 +231,14 @@ export const submitPilotValidation = async (req, res) => {
       action: AuditActions.VALIDATION_SUBMITTED,
       entityType: 'validation',
       entityId: validation.id,
-      description: `Expert '${expert.profiles?.full_name}' validated pilot (${final_result}) for '${validation.pilots?.startups?.name}'`
+      description: `Expert '${expert.profiles?.full_name}' validated pilot (${final_result}) for '${pilot.startups?.name}'`
     });
 
     // 5. Notify Government Officers
     await createNotification({
       role: 'government',
       title: 'Pilot Validation Report Submitted',
-      message: `${expert.profiles?.full_name} completed independent validation for ${validation.pilots?.startups?.name} (Result: ${final_result.toUpperCase()}).`,
+      message: `${expert.profiles?.full_name} completed independent validation for ${pilot.startups?.name} (Result: ${final_result.toUpperCase()}).`,
       type: final_result === 'approved' ? 'success' : 'warning'
     });
 
@@ -282,7 +293,7 @@ export const updateValidation = async (req, res) => {
     const { data: expert } = await supabaseAdmin
       .from('experts')
       .select('id')
-      .eq('profile_id', userId)
+      .eq('user_id', userId)
       .single();
 
     if (!expert) {

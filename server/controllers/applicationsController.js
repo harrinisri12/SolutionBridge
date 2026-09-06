@@ -15,7 +15,7 @@ export const listApplications = async (req, res) => {
 
     let query = supabaseAdmin
       .from('applications')
-      .select('*, challenges(id, title, category, budget, department_id, government_departments(name)), startups(id, name, dpiit_number, sector, verified), evaluations(*)')
+      .select('*, challenges(id, title, category, department_id, government_departments(name)), startups(id, name, dpiit_number, sector, verified), evaluations(*)')
       .order('created_at', { ascending: false });
 
     // Role-based scoping
@@ -24,7 +24,7 @@ export const listApplications = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!startup) {
@@ -37,7 +37,7 @@ export const listApplications = async (req, res) => {
       const { data: expert } = await supabaseAdmin
         .from('experts')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!expert) {
@@ -119,7 +119,7 @@ export const getApplicationById = async (req, res) => {
 
     const { data: application, error } = await supabaseAdmin
       .from('applications')
-      .select('*, challenges(*, government_departments(name)), startups(*, profiles(full_name, email, phone)), evaluations(*, experts(id, specialization, institution, profiles(full_name, email)))')
+      .select('*, challenges(*, government_departments(name)), startups(*, profiles(full_name, email, phone)), evaluations(*, experts(id, expertise, organization, profiles(full_name, email)))')
       .eq('id', id)
       .single();
 
@@ -132,7 +132,7 @@ export const getApplicationById = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!startup || startup.id !== application.startup_id) {
@@ -161,8 +161,7 @@ export const submitApplication = async (req, res) => {
       technical_approach,
       expected_impact,
       estimated_cost,
-      estimated_cost_numeric,
-      documents
+      estimated_cost_numeric
     } = req.body;
 
     if (!challenge_id || !proposal) {
@@ -170,13 +169,40 @@ export const submitApplication = async (req, res) => {
     }
 
     // 1. Verify startup ownership
-    const { data: startup, error: startupError } = await supabaseAdmin
+    let { data: startup, error: startupError } = await supabaseAdmin
       .from('startups')
       .select('*')
-      .eq('profile_id', userId)
-      .single();
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (startupError || !startup) {
+    if (!startup) {
+      // Auto-create startup record if user registered as startup role
+      const { data: userProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (userProfile && userProfile.role === 'startup') {
+        const { data: createdStartup } = await supabaseAdmin
+          .from('startups')
+          .insert([
+            {
+              user_id: userId,
+              name: userProfile.organization || userProfile.full_name || 'My Startup',
+              dpiit_number: 'DPIIT' + Math.floor(100000 + Math.random() * 900000),
+              sector: 'Technology',
+              verified: false,
+              created_at: new Date().toISOString()
+            }
+          ])
+          .select()
+          .single();
+        startup = createdStartup;
+      }
+    }
+
+    if (!startup) {
       return ApiResponse.error(res, 'You must register a startup profile before applying to challenges', 403, 'STARTUP_REQUIRED');
     }
 
@@ -207,6 +233,15 @@ export const submitApplication = async (req, res) => {
       return ApiResponse.error(res, 'Your startup has already submitted a proposal for this challenge', 409, 'ALREADY_APPLIED');
     }
 
+    // Compose technical solution and cost details
+    const fullTechSolution = technical_solution || [
+      proposal,
+      technical_approach ? `\n\nApproach: ${technical_approach}` : '',
+      expected_impact ? `\n\nImpact: ${expected_impact}` : ''
+    ].join('');
+
+    const costStr = estimated_cost ? String(estimated_cost) : estimated_cost_numeric ? `₹${estimated_cost_numeric}` : 'To be determined';
+
     // 4. Create application
     const { data: newApp, error: appError } = await supabaseAdmin
       .from('applications')
@@ -215,15 +250,12 @@ export const submitApplication = async (req, res) => {
           challenge_id,
           startup_id: startup.id,
           proposal: proposal.trim(),
-          technical_solution: technical_solution || proposal,
-          technical_approach: technical_approach || null,
-          expected_impact: expected_impact || null,
-          estimated_cost: estimated_cost || null,
-          estimated_cost_numeric: estimated_cost_numeric ? Number(estimated_cost_numeric) : null,
-          documents: documents || [],
+          technical_solution: fullTechSolution.trim(),
+          estimated_cost: costStr,
           dpiit_verified: Boolean(startup.verified),
           status: 'under_review',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
       ])
       .select('*, challenges(title, department_id), startups(name)')
@@ -265,7 +297,7 @@ export const submitApplication = async (req, res) => {
 export const updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, remarks } = req.body;
+    const { status } = req.body;
 
     const validStatuses = ['under_review', 'shortlisted', 'selected', 'rejected'];
     if (!status || !validStatuses.includes(status.toLowerCase())) {
@@ -283,12 +315,10 @@ export const updateApplicationStatus = async (req, res) => {
       .from('applications')
       .update({
         status: normalizedStatus,
-        status_remarks: remarks || null,
-        status_updated_by: req.user.id,
-        status_updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
-      .select('*, challenges(title), startups(name, profile_id)')
+      .select('*, challenges(title), startups(name, user_id)')
       .single();
 
     if (error || !application) {
@@ -306,9 +336,9 @@ export const updateApplicationStatus = async (req, res) => {
     });
 
     // Notify Startup
-    if (application.startups?.profile_id) {
+    if (application.startups?.user_id) {
       await createNotification({
-        userId: application.startups.profile_id,
+        userId: application.startups.user_id,
         role: 'startup',
         title: `Proposal Status: ${normalizedStatus.toUpperCase()}`,
         message: `Your application for '${application.challenges?.title}' has been moved to '${normalizedStatus}'.`,

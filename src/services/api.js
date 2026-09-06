@@ -12,11 +12,14 @@ export async function apiRequest(endpoint, options = {}) {
     ...options.headers
   };
 
-  // Attach Supabase JWT Bearer token if session exists
+  // Attach Supabase JWT Bearer token if session exists and not explicitly passed
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
+    const hasAuthHeader = Boolean(headers['Authorization'] || headers['authorization']);
+    if (!hasAuthHeader) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
     }
   } catch (err) {
     // Session retrieval skipped or in offline mode

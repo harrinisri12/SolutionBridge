@@ -16,7 +16,7 @@ export const getProcurementPayments = async (req, res) => {
     // Verify access to the parent procurement
     const { data: procurement, error: procError } = await supabaseAdmin
       .from('procurements')
-      .select('id, startup_id, department_id, startups(profile_id)')
+      .select('id, startup_id, department_id, startups(user_id)')
       .eq('id', procurementId)
       .single();
 
@@ -28,19 +28,15 @@ export const getProcurementPayments = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (!startup || procurement.startup_id !== startup.id) {
         return ApiResponse.error(res, 'Access denied', 403, 'FORBIDDEN');
       }
     }
 
-    const { data: payments, error } = await supabaseAdmin
-      .from('payments')
-      .select('*')
-      .eq('procurement_id', procurementId)
-      .order('created_at', { ascending: true });
+    const { data: payments, error } = await queryPayments(procurementId);
 
     if (error) {
       logger.error('Error fetching procurement payments', error);
@@ -52,6 +48,14 @@ export const getProcurementPayments = async (req, res) => {
     logger.error('Error in getProcurementPayments controller', error);
     return ApiResponse.error(res, 'Failed to get payments', 500, 'SERVER_ERROR');
   }
+};
+
+const queryPayments = async (procurementId) => {
+  return await supabaseAdmin
+    .from('payments')
+    .select('*')
+    .eq('procurement_id', procurementId)
+    .order('created_at', { ascending: true });
 };
 
 /**
@@ -128,7 +132,7 @@ export const updatePaymentStatus = async (req, res) => {
 
     const { data: existing, error: findError } = await supabaseAdmin
       .from('payments')
-      .select('*, procurements(id, procurement_order, startup_id, startups(name, profile_id), department_id)')
+      .select('*, procurements(id, procurement_order, startup_id, startups(name, user_id), department_id)')
       .eq('id', id)
       .single();
 
@@ -173,9 +177,9 @@ export const updatePaymentStatus = async (req, res) => {
     }
 
     // Notify Startup
-    if (existing.procurements?.startups?.profile_id) {
+    if (existing.procurements?.startups?.user_id) {
       await createNotification({
-        userId: existing.procurements.startups.profile_id,
+        userId: existing.procurements.startups.user_id,
         role: 'startup',
         title: `Payment Milestone ${status.toUpperCase()}`,
         message: `Milestone disbursement of INR ${Number(existing.amount).toLocaleString()} for '${existing.milestone_name}' is now ${status}.`,

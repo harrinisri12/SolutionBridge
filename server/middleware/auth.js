@@ -46,9 +46,23 @@ export const requireAuth = async (req, res, next) => {
       .from('profiles')
       .select('*')
       .eq('id', authUser.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    // Special allowance for the startup registration endpoint: profile might be created in that call
+    if (!profile) {
+      if (req.path === '/register-startup' || req.originalUrl?.includes('/auth/register-startup')) {
+        req.user = {
+          id: authUser.id,
+          email: authUser.email,
+          role: 'startup',
+          is_admin: false,
+          is_active: true,
+          token
+        };
+        req.supabase = createUserClient(token);
+        return next();
+      }
+
       logger.warn(`Profile not found for authenticated auth_id: ${authUser.id}`);
       return ApiResponse.error(
         res,
@@ -73,7 +87,7 @@ export const requireAuth = async (req, res, next) => {
       id: profile.id,
       email: profile.email || authUser.email,
       full_name: profile.full_name || '',
-      role: profile.role, // 'government' | 'startup' | 'expert'
+      role: (profile.role || '').toLowerCase(), // 'government' | 'startup' | 'expert'
       is_admin: Boolean(profile.is_admin),
       is_active: Boolean(profile.is_active),
       department_id: profile.department_id || null,

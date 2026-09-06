@@ -5,7 +5,7 @@ import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, UploadCloud, CheckSq
 
 const ApplicationForm = () => {
   const { challengeId } = useParams();
-  const { challenges, submitApplication, addToast } = useApp();
+  const { challenges, submitApplication, addToast, currentUser } = useApp();
   const navigate = useNavigate();
 
   const challengeObj = challenges.find(c => c.id === challengeId);
@@ -15,11 +15,10 @@ const ApplicationForm = () => {
 
   // Form State
   const [formData, setFormData] = useState({
-    startupId: "startup-1", // Logged in startup reference
     challengeId: challengeId || "",
-    companyName: "HealthTech Solutions",
-    registrationDetails: "REG-987654-A (Incorporated 2021)",
-    recognition: "DPIIT Recognized (DPIIT-837482)",
+    companyName: currentUser?.organization || currentUser?.user?.organization || currentUser?.user?.full_name || "My Startup",
+    registrationDetails: "DPIIT Registered Innovator",
+    recognition: "DPIIT Recognized",
     sector: challengeObj?.sector || "Healthcare",
     solutionDescription: "",
     proposedTechnology: challengeObj?.requiredTechnology || "",

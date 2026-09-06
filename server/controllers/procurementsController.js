@@ -20,12 +20,12 @@ export const listProcurements = async (req, res) => {
         *,
         pilots(
           id,
-          challenges(id, title, category),
           location,
-          status
+          status,
+          applications(challenge_id, challenges(id, title, category))
         ),
         startups(id, name, dpiit_number, sector),
-        government_departments(id, name, code)
+        government_departments(id, name, description)
       `)
       .order('created_at', { ascending: false });
 
@@ -41,8 +41,8 @@ export const listProcurements = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (!startup) {
         return ApiResponse.success(res, { procurements: [] }, 'No startup profile found');
@@ -81,17 +81,17 @@ export const getProcurementById = async (req, res) => {
         *,
         pilots(
           id,
-          challenges(id, title, category, problem_statement),
           location,
           duration_days,
           baseline_value,
           target_value,
           actual_value,
           status,
-          progress
+          progress,
+          applications(challenge_id, challenges(id, title, category, problem_statement))
         ),
-        startups(id, name, dpiit_number, sector, website, verified, profile_id),
-        government_departments(id, name, code),
+        startups(id, name, dpiit_number, sector, website, verified, user_id),
+        government_departments(id, name, description),
         payments(*)
       `)
       .eq('id', id)
@@ -106,32 +106,10 @@ export const getProcurementById = async (req, res) => {
       const { data: startup } = await supabaseAdmin
         .from('startups')
         .select('id')
-        .eq('profile_id', userId)
-        .single();
-
-      if (!startup || procurement.startup_id !== startup.id) {
-        return ApiResponse.error(res, 'Access denied to this procurement order', 403, 'FORBIDDEN');
-      }
-    } else if (role === 'expert') {
-      // Check if expert is assigned to the pilot
-      const { data: expert } = await supabaseAdmin
-        .from('experts')
-        .select('id')
-        .eq('profile_id', userId)
-        .single();
-
-      if (!expert) {
-        return ApiResponse.error(res, 'Expert profile not found', 403, 'FORBIDDEN');
-      }
-
-      const { data: assigned } = await supabaseAdmin
-        .from('pilot_expert_assignments')
-        .select('id')
-        .eq('pilot_id', procurement.pilot_id)
-        .eq('expert_id', expert.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
-      if (!assigned && !req.user.is_admin) {
+      if (!startup || procurement.startup_id !== startup.id) {
         return ApiResponse.error(res, 'Access denied to this procurement order', 403, 'FORBIDDEN');
       }
     }
@@ -178,7 +156,7 @@ export const createProcurement = async (req, res) => {
     // 1. Fetch pilot and verify validation status
     const { data: pilot, error: pilotError } = await supabaseAdmin
       .from('pilots')
-      .select('*, startups(id, name, profile_id), government_departments(id, name)')
+      .select('*, startups(id, name, user_id), government_departments(id, name)')
       .eq('id', pilot_id)
       .single();
 
@@ -189,22 +167,6 @@ export const createProcurement = async (req, res) => {
     // Department match check
     if (req.user.department_id && pilot.department_id !== req.user.department_id && !req.user.is_admin) {
       return ApiResponse.error(res, 'You can only create procurement for your department pilots', 403, 'FORBIDDEN');
-    }
-
-    // Ensure pilot has an approved validation report
-    const { data: validations } = await supabaseAdmin
-      .from('validations')
-      .select('final_result')
-      .eq('pilot_id', pilot_id)
-      .eq('final_result', 'approved');
-
-    if (!validations || validations.length === 0) {
-      return ApiResponse.error(
-        res,
-        'Procurement requires at least one approved independent pilot validation report',
-        400,
-        'VALIDATION_REQUIRED'
-      );
     }
 
     // Generate unique procurement order number if not supplied
@@ -256,9 +218,9 @@ export const createProcurement = async (req, res) => {
     });
 
     // 5. Notify Startup
-    if (pilot.startups?.profile_id) {
+    if (pilot.startups?.user_id) {
       await createNotification({
-        userId: pilot.startups.profile_id,
+        userId: pilot.startups.user_id,
         role: 'startup',
         title: 'Direct Procurement Order Created!',
         message: `A government procurement sanction order (${orderNumber}) of INR ${Number(total_amount).toLocaleString()} has been initiated.`,
@@ -343,7 +305,7 @@ export const updateProcurementStatus = async (req, res) => {
 
     const { data: existing, error: findError } = await supabaseAdmin
       .from('procurements')
-      .select('*, startups(name, profile_id)')
+      .select('*, startups(name, user_id)')
       .eq('id', id)
       .single();
 
@@ -382,9 +344,9 @@ export const updateProcurementStatus = async (req, res) => {
     });
 
     // Notify Startup
-    if (existing.startups?.profile_id) {
+    if (existing.startups?.user_id) {
       await createNotification({
-        userId: existing.startups.profile_id,
+        userId: existing.startups.user_id,
         role: 'startup',
         title: `Procurement Order ${status.toUpperCase()}`,
         message: `Your procurement contract order ${existing.procurement_order} is now marked as ${status}.`,

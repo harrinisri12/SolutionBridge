@@ -29,7 +29,6 @@ const GovApplications = () => {
   const {
     applications,
     challenges,
-    STARTUPS,
     updateApplicationStatus
   } = useApp();
 
@@ -337,7 +336,6 @@ const GovApplications = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {shortlistedApps.map((app) => {
               const s = app.scores || {};
-              const startupInfo = STARTUPS.find((st) => st.id === app.startupId) || {};
 
               return (
                 <div
@@ -355,7 +353,7 @@ const GovApplications = () => {
                           {app.startupName}
                         </h3>
                         <p className="text-[11px] text-blue-700 font-semibold">
-                          {startupInfo.recognition || 'DPIIT Startup'}
+                          {app.dpiitNumber ? `DPIIT Reg: ${app.dpiitNumber}` : 'DPIIT Registered Startup'}
                         </p>
                       </div>
                       <Badge status={app.status} size="sm" />

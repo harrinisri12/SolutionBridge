@@ -57,7 +57,7 @@ export const getDepartmentById = async (req, res) => {
  */
 export const createDepartment = async (req, res) => {
   try {
-    const { name, code, ministry, state, description } = req.body;
+    const { name, description, contact_email } = req.body;
 
     if (!name) {
       return ApiResponse.error(res, 'Department name is required', 422, 'VALIDATION_ERROR');
@@ -68,10 +68,8 @@ export const createDepartment = async (req, res) => {
       .insert([
         {
           name: name.trim(),
-          code: code ? code.trim().toUpperCase() : null,
-          ministry: ministry || null,
-          state: state || 'National',
           description: description || null,
+          contact_email: contact_email || null,
           created_at: new Date().toISOString()
         }
       ])
@@ -105,14 +103,12 @@ export const createDepartment = async (req, res) => {
 export const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code, ministry, state, description } = req.body;
+    const { name, description, contact_email } = req.body;
 
     const updates = {};
     if (name) updates.name = name.trim();
-    if (code !== undefined) updates.code = code.trim().toUpperCase();
-    if (ministry !== undefined) updates.ministry = ministry;
-    if (state !== undefined) updates.state = state;
     if (description !== undefined) updates.description = description;
+    if (contact_email !== undefined) updates.contact_email = contact_email;
 
     const { data: department, error } = await supabaseAdmin
       .from('government_departments')

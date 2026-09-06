@@ -1,0 +1,12 @@
+import React, { useEffect, useState } from 'react';
+import { RefreshCw, Rocket } from 'lucide-react';
+import { api } from '../../services/api';
+
+const AdminStartups = () => {
+  const [startups, setStartups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => { setLoading(true); const response = await api.get('/startups'); setStartups(response.data?.startups || []); setLoading(false); };
+  useEffect(() => { load(); }, []);
+  return <div className="space-y-5"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Platform administration</p><h1 className="text-2xl font-bold text-slate-900 mt-1">Startups</h1><p className="text-sm text-slate-500 mt-1">View registered startup profiles and account status.</p></div><button onClick={load} title="Refresh" className="p-2 border border-slate-300 rounded-md"><RefreshCw className="w-4 h-4" /></button></div><div className="gov-card overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-[11px] uppercase text-slate-500"><tr>{['Startup name', 'DPIIT number', 'Sector', 'Contact / user', 'Verification', 'Account status', 'Date registered'].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan={7} className="p-8 text-center">Loading startups...</td></tr> : startups.length === 0 ? <tr><td colSpan={7} className="p-8 text-center text-slate-500">No startups registered.</td></tr> : startups.map((startup) => <tr key={startup.id}><td className="px-4 py-3 font-semibold"><div className="flex items-center gap-2"><Rocket className="w-4 h-4 text-emerald-600" />{startup.name}</div></td><td className="px-4 py-3">{startup.dpiit_number || '-'}</td><td className="px-4 py-3">{startup.sector || '-'}</td><td className="px-4 py-3"><div>{startup.profiles?.full_name || '-'}</div><div className="text-xs text-slate-500">{startup.profiles?.email || '-'}</div></td><td className="px-4 py-3">{startup.verified ? 'Verified' : 'Pending'}</td><td className="px-4 py-3">{startup.profiles?.is_active === false ? 'Inactive' : 'Active'}</td><td className="px-4 py-3">{startup.created_at ? new Date(startup.created_at).toLocaleDateString() : '-'}</td></tr>)}</tbody></table></div></div>;
+};
+export default AdminStartups;

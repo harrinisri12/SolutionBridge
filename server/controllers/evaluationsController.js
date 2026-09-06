@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
  */
 export const submitEvaluation = async (req, res) => {
   try {
-    const { id: applicationId } = req.params;
+    const applicationId = req.params.id || req.body.application_id || req.body.applicationId;
     const userId = req.user.id;
     const {
       technical_feasibility,
@@ -23,11 +23,15 @@ export const submitEvaluation = async (req, res) => {
       comments
     } = req.body;
 
+    if (!applicationId) {
+      return ApiResponse.error(res, 'application_id is required', 422, 'VALIDATION_ERROR');
+    }
+
     // 1. Identify expert record linked to authenticated user
     const { data: expert, error: expertError } = await supabaseAdmin
       .from('experts')
-      .select('id, profile_id, profiles(full_name)')
-      .eq('profile_id', userId)
+      .select('id, user_id, profiles(full_name)')
+      .eq('user_id', userId)
       .single();
 
     if (expertError || !expert) {
@@ -39,7 +43,7 @@ export const submitEvaluation = async (req, res) => {
       .from('expert_assignments')
       .select('id')
       .eq('application_id', applicationId)
-      .eq('expert_id', expert.id)
+      .or(`expert_id.eq.${expert.id},expert_id.eq.${expert.user_id}`)
       .maybeSingle();
 
     if (assignError || !assignment) {
@@ -88,8 +92,7 @@ export const submitEvaluation = async (req, res) => {
           implementation_risk: scores.implementation_risk,
           weighted_score,
           recommendation: recommendation || 'Recommend for Pilot',
-          comments: comments || null,
-          evaluated_at: new Date().toISOString()
+          comments: comments || null
         }
       ])
       .select('*, applications(challenge_id, challenges(title), startups(name))')
@@ -99,6 +102,13 @@ export const submitEvaluation = async (req, res) => {
       logger.error('Error inserting evaluation record', evalError);
       return ApiResponse.error(res, 'Failed to save evaluation', 500, 'SERVER_ERROR');
     }
+
+    // Update assignment status to evaluated if assigned
+    await supabaseAdmin
+      .from('expert_assignments')
+      .update({ status: 'completed' })
+      .eq('application_id', applicationId)
+      .eq('expert_id', expert.id);
 
     // 6. Audit Log
     await logAudit({
@@ -136,7 +146,7 @@ export const getEvaluationsByApplication = async (req, res) => {
       .from('evaluations')
       .select('*, experts(*, profiles(full_name, email, organization))')
       .eq('application_id', applicationId)
-      .order('evaluated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       logger.error('Error fetching application evaluations', error);
@@ -172,7 +182,7 @@ export const updateEvaluation = async (req, res) => {
     const { data: expert } = await supabaseAdmin
       .from('experts')
       .select('id')
-      .eq('profile_id', userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (!expert) {
@@ -209,8 +219,7 @@ export const updateEvaluation = async (req, res) => {
         implementation_risk: scores.implementation_risk,
         weighted_score,
         recommendation: recommendation || undefined,
-        comments: comments || undefined,
-        updated_at: new Date().toISOString()
+        comments: comments || undefined
       })
       .eq('id', id)
       .select()

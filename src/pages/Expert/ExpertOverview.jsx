@@ -23,10 +23,10 @@ const ExpertOverview = () => {
   const { applications, pilots, recentActivities, currentUser } = useApp();
   const navigate = useNavigate();
 
-  const assignedEvaluations = applications.length || 7;
-  const pendingEvaluations = applications.filter((a) => !a.scores?.overallScore || a.status === 'Submitted' || a.status === 'Under Evaluation').length || 2;
-  const activePilots = pilots.length || 3;
-  const pendingValidationRequests = pilots.filter((p) => p.status === 'Validation' || p.status === 'Ongoing').length || 2;
+  const assignedEvaluations = applications.length;
+  const pendingEvaluations = applications.filter((a) => !a.scores?.overallScore || a.status === 'Submitted' || a.status === 'Under Evaluation' || a.status === 'submitted' || a.status === 'under_evaluation').length;
+  const activePilots = pilots.length;
+  const pendingValidationRequests = pilots.filter((p) => p.status === 'Validation' || p.status === 'Ongoing' || p.status === 'in_progress' || p.status === 'active').length;
 
   const expertQueue = applications.slice(0, 4);
 
@@ -126,7 +126,12 @@ const ExpertOverview = () => {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {expertQueue.map((app) => (
+            {expertQueue.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                No assigned applications pending evaluation.
+              </div>
+            ) : (
+              expertQueue.map((app) => (
               <div
                 key={app.id}
                 className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
@@ -168,7 +173,7 @@ const ExpertOverview = () => {
                   </Button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 

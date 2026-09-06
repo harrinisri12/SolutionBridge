@@ -15,7 +15,7 @@ export const getMilestonesByPilot = async (req, res) => {
       .from('pilot_milestones')
       .select('*, pilot_evidence(*)')
       .eq('pilot_id', pilotId)
-      .order('sequence_order', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) {
       logger.error('Error fetching pilot milestones', error);
@@ -36,7 +36,7 @@ export const getMilestonesByPilot = async (req, res) => {
 export const createMilestone = async (req, res) => {
   try {
     const { pilotId } = req.params;
-    const { title, description, budget_share, target_date, sequence_order } = req.body;
+    const { title, description, target_date } = req.body;
 
     if (!title) {
       return ApiResponse.error(res, 'Milestone title is required', 422, 'VALIDATION_ERROR');
@@ -49,10 +49,7 @@ export const createMilestone = async (req, res) => {
           pilot_id: pilotId,
           title: title.trim(),
           description: description || null,
-          budget_share: budget_share ? Number(budget_share) : null,
           target_date: target_date || null,
-          sequence_order: sequence_order || 1,
-          progress: 0,
           status: 'pending',
           created_at: new Date().toISOString()
         }
@@ -87,19 +84,15 @@ export const createMilestone = async (req, res) => {
 export const updateMilestoneStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, progress, remarks } = req.body;
+    const { status } = req.body;
 
     const validStatuses = ['pending', 'in_progress', 'completed', 'verified'];
     if (status && !validStatuses.includes(status.toLowerCase())) {
       return ApiResponse.error(res, `Status must be one of: ${validStatuses.join(', ')}`, 422, 'VALIDATION_ERROR');
     }
 
-    const updates = {
-      updated_at: new Date().toISOString()
-    };
+    const updates = {};
     if (status) updates.status = status.toLowerCase();
-    if (progress !== undefined) updates.progress = Number(progress);
-    if (remarks !== undefined) updates.remarks = remarks;
     if (status === 'completed' || status === 'verified') {
       updates.completed_at = new Date().toISOString();
     }
@@ -113,6 +106,23 @@ export const updateMilestoneStatus = async (req, res) => {
 
     if (error || !milestone) {
       return ApiResponse.error(res, 'Failed to update milestone', 500, 'SERVER_ERROR');
+    }
+
+    // Recalculate pilot overall progress
+    if (milestone.pilot_id) {
+      const { data: allMilestones } = await supabaseAdmin
+        .from('pilot_milestones')
+        .select('status')
+        .eq('pilot_id', milestone.pilot_id);
+
+      if (allMilestones && allMilestones.length > 0) {
+        const completedCount = allMilestones.filter((m) => m.status === 'completed' || m.status === 'verified').length;
+        const progressPct = Math.round((completedCount / allMilestones.length) * 100);
+        await supabaseAdmin
+          .from('pilots')
+          .update({ progress: progressPct })
+          .eq('id', milestone.pilot_id);
+      }
     }
 
     await logAudit({
@@ -137,23 +147,21 @@ export const updateMilestoneStatus = async (req, res) => {
 export const updateMilestone = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, budget_share, target_date, sequence_order, progress, status } = req.body;
+    const { title, description, target_date, status } = req.body;
 
-    const updates = {
-      updated_at: new Date().toISOString()
-    };
+    const updates = {};
     if (title !== undefined) updates.title = title.trim();
     if (description !== undefined) updates.description = description;
-    if (budget_share !== undefined) updates.budget_share = Number(budget_share);
     if (target_date !== undefined) updates.target_date = target_date;
-    if (sequence_order !== undefined) updates.sequence_order = Number(sequence_order);
-    if (progress !== undefined) updates.progress = Number(progress);
     if (status) {
       const validStatuses = ['pending', 'in_progress', 'completed', 'verified'];
       if (!validStatuses.includes(status.toLowerCase())) {
         return ApiResponse.error(res, `Status must be one of: ${validStatuses.join(', ')}`, 422, 'VALIDATION_ERROR');
       }
       updates.status = status.toLowerCase();
+      if (status === 'completed' || status === 'verified') {
+        updates.completed_at = new Date().toISOString();
+      }
     }
 
     const { data: milestone, error } = await supabaseAdmin

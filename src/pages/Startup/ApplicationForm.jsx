@@ -495,9 +495,53 @@ const ApplicationForm = () => {
         </div>
       </div>
 
-      {/* 2. Horizontal Step Progression Indicator */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs overflow-x-auto">
-        <div className="flex items-center justify-between min-w-[720px] gap-2">
+      {/* 2. Step Progression Indicator (Responsive Mobile & Desktop) */}
+      {/* 2A. Mobile Compact Stepper (< sm) */}
+      <div className="sm:hidden bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-xs font-bold text-slate-800">
+              Step {step} of {STEPS.length}: <span className="text-blue-700">{STEPS[step - 1]?.label}</span>
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-500 font-medium">
+            {Math.round((step / STEPS.length) * 100)}% Complete
+          </span>
+        </div>
+        {/* Progress bar */}
+        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+            style={{ width: `${(step / STEPS.length) * 100}%` }}
+          />
+        </div>
+        {/* Mini dot indicators */}
+        <div className="flex items-center justify-between pt-1">
+          {STEPS.map((s) => (
+            <button
+              key={s.num}
+              type="button"
+              onClick={() => {
+                if (s.num < step) setStep(s.num);
+              }}
+              className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-all ${
+                s.num === step
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : s.num < step
+                  ? 'bg-emerald-600 text-white cursor-pointer'
+                  : 'bg-slate-100 text-slate-400'
+              }`}
+            >
+              {s.num < step ? '✓' : s.num}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 2B. Desktop Horizontal Stepper (>= sm) */}
+      <div className="hidden sm:block bg-white border border-slate-200 rounded-lg p-4 shadow-xs overflow-x-auto">
+        <div className="flex items-center justify-between min-w-[640px] gap-2">
           {STEPS.map((s) => {
             const isDone = step > s.num;
             const isCurrent = step === s.num;
@@ -1417,24 +1461,26 @@ const ApplicationForm = () => {
         </div>
 
         {/* 4. Navigation Buttons */}
-        <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
           <Button
             type="button"
             variant="outline"
             size="sm"
             disabled={step === 1 || isSubmitting}
             onClick={handlePrevStep}
+            className="w-full sm:w-auto justify-center"
           >
             Previous Step
           </Button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             {step < 7 ? (
               <Button
                 type="button"
                 variant="primary"
                 size="sm"
                 onClick={handleNextStep}
+                className="w-full sm:w-auto justify-center"
               >
                 <span>Continue to {STEPS[step]?.label}</span>
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -1445,7 +1491,7 @@ const ApplicationForm = () => {
                 variant="primary"
                 size="md"
                 disabled={!formData.confirmation_checked || isSubmitting}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6"
+                className="w-full sm:w-auto justify-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6"
               >
                 {isSubmitting ? (
                   <span>Submitting your application...</span>

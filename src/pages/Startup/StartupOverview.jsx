@@ -75,11 +75,12 @@ const StartupOverview = () => {
             Track your challenge applications, active pilot deployment telemetry, milestone verifications, and treasury payments.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate('/startup/pilot')}
+            className="w-full sm:w-auto justify-center"
           >
             Go to My Pilot
           </Button>
@@ -87,6 +88,7 @@ const StartupOverview = () => {
             variant="secondary"
             size="sm"
             onClick={() => navigate('/startup/challenges')}
+            className="w-full sm:w-auto justify-center"
           >
             Browse New Challenges
           </Button>
@@ -94,7 +96,7 @@ const StartupOverview = () => {
       </div>
 
       {/* 6 Top Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
         <StatCard
           title="Applications Submitted"
           value={submittedCount}

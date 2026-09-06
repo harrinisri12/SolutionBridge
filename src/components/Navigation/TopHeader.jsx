@@ -12,10 +12,11 @@ import {
   ShieldCheck,
   Building2,
   ChevronDown,
-  CheckCircle2
+  CheckCircle2,
+  Menu
 } from 'lucide-react';
 
-const TopHeader = () => {
+const TopHeader = ({ onToggleMenu }) => {
   const {
     currentRole,
     currentUser,
@@ -63,27 +64,27 @@ const TopHeader = () => {
       const parts = p.split('/');
       const challengeId = parts.length > 3 ? parts[3] : null;
       return [
-        { label: 'Government Portal', path: '/gov/overview' },
-        { label: 'Challenges', path: '/gov/challenges' },
-        ...(challengeId ? [{ label: `#${challengeId}`, isCurrent: true }] : [{ label: 'All Challenges', isCurrent: true }])
+        { label: 'Portal', path: currentRole === 'Startup' ? '/startup/overview' : '/gov/overview' },
+        { label: 'Challenges', path: currentRole === 'Startup' ? '/startup/challenges' : '/gov/challenges' },
+        ...(challengeId ? [{ label: `#${challengeId.slice(0, 8)}`, isCurrent: true }] : [{ label: 'Catalog', isCurrent: true }])
       ];
     }
     if (p.includes('/applications')) {
       return [
-        { label: 'Government Portal', path: '/gov/overview' },
+        { label: 'Portal', path: currentRole === 'Startup' ? '/startup/overview' : '/gov/overview' },
         { label: 'Applications & Evaluation', isCurrent: true }
       ];
     }
     if (p.includes('/pilots') || p.includes('/pilot')) {
       return [
-        { label: 'Government Portal', path: '/gov/overview' },
+        { label: 'Portal', path: currentRole === 'Startup' ? '/startup/overview' : '/gov/overview' },
         { label: 'Pilot Sandbox & Validation', isCurrent: true }
       ];
     }
-    if (p.includes('/procurement')) {
+    if (p.includes('/procurement') || p.includes('/payments')) {
       return [
-        { label: 'Government Portal', path: '/gov/overview' },
-        { label: 'Procurement & Scale-up', isCurrent: true }
+        { label: 'Portal', path: currentRole === 'Startup' ? '/startup/overview' : '/gov/overview' },
+        { label: currentRole === 'Startup' ? 'Payments & Status' : 'Procurement & Scale-up', isCurrent: true }
       ];
     }
     if (p.includes('/admin')) {
@@ -93,7 +94,7 @@ const TopHeader = () => {
       ];
     }
     return [
-      { label: 'Government Portal', path: '/gov/overview' },
+      { label: `${currentRole} Portal`, path: `/${currentRole.toLowerCase()}/overview` },
       { label: 'Overview & Intelligence', isCurrent: true }
     ];
   };
@@ -101,35 +102,46 @@ const TopHeader = () => {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md border-b border-[#e2e8f0] shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
+    <header className="sticky top-0 z-40 bg-[#f8f9ff]/95 backdrop-blur-md border-b border-[#e2e8f0] shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
       {/* Official Top National Banner Stripe */}
       <div className="gov-header-stripe" />
 
       {/* Main Bar */}
-      <div className="px-6 h-14 flex items-center justify-between gap-4">
-        {/* Breadcrumb Trail */}
-        <div className="flex items-center gap-1.5 text-xs text-[#43474d] min-w-0">
-          {breadcrumbs.map((crumb, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#74777e] shrink-0" />}
-              {crumb.path ? (
-                <Link
-                  to={crumb.path}
-                  className="hover:text-[#001428] font-medium transition-colors truncate"
-                >
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className={`truncate ${crumb.isCurrent ? 'text-[#001428] font-bold' : ''}`}>
-                  {crumb.label}
-                </span>
-              )}
-            </React.Fragment>
-          ))}
+      <div className="px-3.5 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Left: Mobile Menu Toggle & Breadcrumb Trail */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={onToggleMenu}
+            className="lg:hidden p-1.5 text-[#43474d] hover:text-[#001428] hover:bg-[#eff4ff] rounded-md transition-colors cursor-pointer shrink-0 border border-[#e2e8f0]"
+            title="Open navigation menu"
+            aria-label="Toggle navigation"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-1.5 text-xs text-[#43474d] min-w-0 max-w-[200px] sm:max-w-md truncate">
+            {breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#74777e] shrink-0" />}
+                {crumb.path ? (
+                  <Link
+                    to={crumb.path}
+                    className="hover:text-[#001428] font-medium transition-colors truncate hidden sm:inline"
+                  >
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className={`truncate ${crumb.isCurrent ? 'text-[#001428] font-bold' : ''}`}>
+                    {crumb.label}
+                  </span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        {/* Global Search Bar */}
-        <div className="flex-1 max-w-md mx-4 hidden md:block">
+        {/* Global Search Bar (Medium & Desktop) */}
+        <div className="flex-1 max-w-md mx-2 sm:mx-4 hidden md:block">
           <div className="relative flex items-center">
             <Search className="w-4 h-4 absolute left-3 text-[#74777e] pointer-events-none" />
             <input
@@ -146,9 +158,9 @@ const TopHeader = () => {
         </div>
 
         {/* Right Action Tools */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* NIC Cloud Status Pill */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-[#eff4ff] border border-[#d5e3fc] px-2.5 py-1 rounded-full">
+          <div className="hidden xl:flex items-center gap-1.5 bg-[#eff4ff] border border-[#d5e3fc] px-2.5 py-1 rounded-full">
             <span className="w-2 h-2 rounded-full bg-[#0d9488] inline-block animate-pulse"></span>
             <span className="text-[11px] font-semibold text-[#003971] tracking-wide">
               NIC Cloud: Active
@@ -175,7 +187,7 @@ const TopHeader = () => {
 
             {/* Notifications Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-1.5 w-80 bg-white border border-[#e2e8f0] rounded-lg shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-1.5 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white border border-[#e2e8f0] rounded-lg shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
                 <div className="px-3.5 py-1.5 border-b border-[#eff4ff] flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#0d1c2e]">
                     Notifications ({notifications.length})
@@ -230,7 +242,7 @@ const TopHeader = () => {
           </button>
 
           {/* User Profile Avatar with Dropdown */}
-          <div className="relative ml-1" ref={profileRef}>
+          <div className="relative ml-0.5 sm:ml-1" ref={profileRef}>
             <button
               onClick={() => {
                 setShowProfileMenu(!showProfileMenu);
@@ -250,7 +262,7 @@ const TopHeader = () => {
 
             {/* Profile Dropdown Menu */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white border border-[#e2e8f0] rounded-lg shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-xs bg-white border border-[#e2e8f0] rounded-lg shadow-xl py-2 z-50 animate-in fade-in zoom-in-95">
                 {/* User Identity Header */}
                 <div className="px-4 py-3 border-b border-[#eff4ff] bg-[#f8f9ff]">
                   <div className="flex items-center gap-3">

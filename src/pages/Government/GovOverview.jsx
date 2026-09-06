@@ -107,11 +107,12 @@ const GovOverview = () => {
             Monitor real-time progress across challenges, startup applications, pilot deployments, and scale-up procurement.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate('/gov/applications')}
+            className="w-full sm:w-auto justify-center"
           >
             Review Applications
           </Button>
@@ -120,6 +121,7 @@ const GovOverview = () => {
             size="sm"
             icon={Plus}
             onClick={() => navigate('/gov/challenges', { state: { openCreateModal: true } })}
+            className="w-full sm:w-auto justify-center"
           >
             Create Challenge
           </Button>
@@ -127,7 +129,7 @@ const GovOverview = () => {
       </div>
 
       {/* Exactly 5 Main Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           title="Active Challenges"
           value={activeChallengesCount}

@@ -134,11 +134,12 @@ const StartupApplications = () => {
             Track your submitted proposals, evaluation progress, expert assessment status, and selection outcomes.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <Button
             variant="primary"
             size="sm"
             onClick={() => navigate('/startup/challenges')}
+            className="w-full sm:w-auto justify-center"
           >
             Browse New Challenges
           </Button>
@@ -146,7 +147,7 @@ const StartupApplications = () => {
       </div>
 
       {/* 5 Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
         <StatCard
           title="Total Applications"
           value={totalCount}

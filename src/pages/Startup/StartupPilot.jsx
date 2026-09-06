@@ -157,7 +157,7 @@ const StartupPilot = () => {
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 text-xs">
           <div className="flex items-start gap-2.5">
             <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <div>

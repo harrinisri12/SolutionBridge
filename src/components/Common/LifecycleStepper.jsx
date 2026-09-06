@@ -35,12 +35,12 @@ export const LifecycleStepper = ({ activeStage = 'pilot', className = '' }) => {
             Government Innovation Procurement Lifecycle
           </span>
         </div>
-        <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">
+        <span className="text-[11px] font-medium text-slate-500">
           Stage {activeIdx + 1} of {STAGES.length}: <strong className="text-slate-800">{STAGES[activeIdx]?.label || 'Active Workflow'}</strong>
         </span>
       </div>
 
-      <div className="overflow-x-auto pb-1">
+      <div className="overflow-x-auto pb-1 scrollbar-thin">
         <div className="flex items-center justify-between min-w-[720px] gap-1">
           {STAGES.map((stage, idx) => {
             const Icon = stage.icon;

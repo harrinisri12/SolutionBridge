@@ -96,15 +96,6 @@ const StartupChallenges = () => {
             Discover verified public sector problems with sanctioned pilot funding and scale-up procurement potential.
           </p>
         </div>
-        <div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/startup/applications')}
-          >
-            My Submitted Applications ({applications?.length || 0})
-          </Button>
-        </div>
       </div>
 
       {/* Filter Toolbar */}

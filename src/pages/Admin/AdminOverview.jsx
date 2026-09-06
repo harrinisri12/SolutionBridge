@@ -36,7 +36,7 @@ const AdminOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="gov-card p-5 lg:col-span-2">
           <h2 className="font-semibold text-slate-900">Account distribution</h2>
-          <div className="grid grid-cols-3 gap-3 mt-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-center">
             <div className="bg-emerald-50 border border-emerald-100 rounded-md p-4"><div className="text-2xl font-bold text-emerald-700">{active}</div><div className="text-xs text-slate-600">Active accounts</div></div>
             <div className="bg-rose-50 border border-rose-100 rounded-md p-4"><div className="text-2xl font-bold text-rose-700">{inactive}</div><div className="text-xs text-slate-600">Inactive accounts</div></div>
             <div className="bg-slate-50 border border-slate-200 rounded-md p-4"><div className="text-2xl font-bold text-slate-800">{data.users.length}</div><div className="text-xs text-slate-600">Total profiles</div></div>

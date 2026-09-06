@@ -335,15 +335,15 @@ const LoginForm = ({
 
       {/* Government Account Rule */}
       {selectedRole === 'Government' && (
-        <div className="bg-slate-50 border border-slate-200 rounded-md p-3 text-slate-700 flex items-start gap-2 text-xs">
-          <Shield className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
+        <div className="bg-[#eff4ff] border border-[#d5e3fc] rounded-md p-3 text-[#001428] flex items-start gap-2 text-xs">
+          <Shield className="w-4 h-4 text-[#045eb2] shrink-0 mt-0.5" />
 
           <div>
-            <span className="font-semibold block text-slate-900">
+            <span className="font-semibold block text-[#001428]">
               Government Administrative Provisioning
             </span>
 
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-[#43474d]">
               Government accounts are provisioned by authorized administrators.
             </span>
           </div>
@@ -352,15 +352,15 @@ const LoginForm = ({
 
       {/* Expert Account Rule */}
       {selectedRole === 'Expert' && (
-        <div className="bg-purple-50/80 border border-purple-200 rounded-md p-3 text-purple-900 flex items-start gap-2 text-xs">
-          <UserCheck className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+        <div className="bg-[#eef2ff] border border-[#e0e7ff] rounded-md p-3 text-[#001428] flex items-start gap-2 text-xs">
+          <UserCheck className="w-4 h-4 text-[#4f46e5] shrink-0 mt-0.5" />
 
           <div>
-            <span className="font-semibold block text-purple-950">
+            <span className="font-semibold block text-[#001428]">
               Expert Panel Accreditation
             </span>
 
-            <span className="text-[11px] text-purple-800">
+            <span className="text-[11px] text-[#43474d]">
               Expert accounts are created by authorized Government administrators.
             </span>
           </div>
@@ -369,17 +369,17 @@ const LoginForm = ({
 
       {/* Startup Registration */}
       {selectedRole === 'Startup' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-blue-900 flex items-center justify-between gap-3 text-xs">
+        <div className="bg-[#f0fdfa] border border-[#ccfbf1] rounded-md p-3 text-[#001428] flex items-center justify-between gap-3 text-xs">
 
           <div className="flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-blue-700 shrink-0" />
+            <Rocket className="w-4 h-4 text-[#0d9488] shrink-0" />
 
             <div>
-              <span className="font-bold text-slate-900 block">
+              <span className="font-bold text-[#001428] block">
                 New to SolutionBridge?
               </span>
 
-              <span className="text-[11px] text-slate-600">
+              <span className="text-[11px] text-[#43474d]">
                 DPIIT startups can register publicly
               </span>
             </div>
@@ -388,7 +388,7 @@ const LoginForm = ({
           <button
             type="button"
             onClick={onOpenStartupRegister}
-            className="px-2.5 py-1 bg-white hover:bg-blue-100 text-blue-800 font-bold rounded border border-blue-300 text-xs transition-colors shrink-0 cursor-pointer shadow-2xs"
+            className="px-2.5 py-1 bg-white hover:bg-[#f0fdfa] text-[#0d9488] font-bold rounded border border-[#99f6e4] text-xs transition-colors shrink-0 cursor-pointer shadow-2xs"
           >
             Create Startup Account
           </button>
@@ -399,12 +399,12 @@ const LoginForm = ({
       {errorMessage && (
         <div
           role="alert"
-          className="bg-rose-50 border border-rose-200 text-rose-800 rounded-md p-3 text-xs flex items-start gap-2 animate-in fade-in"
+          className="bg-[#fef2f2] border border-[#fecaca] text-[#991b1b] rounded-md p-3 text-xs flex items-start gap-2 animate-in fade-in"
         >
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <AlertCircle className="w-4 h-4 text-[#dc2626] shrink-0 mt-0.5" />
 
           <div>
-            <span className="font-bold block text-rose-900">
+            <span className="font-bold block text-[#7f1d1d]">
               Sign-in Failed
             </span>
 
@@ -419,14 +419,14 @@ const LoginForm = ({
       <div>
         <label
           htmlFor="login-email"
-          className="block text-xs font-semibold text-slate-800 uppercase tracking-wide mb-1"
+          className="block text-[11px] font-bold text-[#001428] uppercase tracking-wide mb-1"
         >
           Email Address{' '}
           <span className="text-rose-600">*</span>
         </label>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8993a4]">
             <Mail className="w-4 h-4" />
           </div>
 
@@ -451,10 +451,10 @@ const LoginForm = ({
             aria-describedby={
               emailError ? 'email-error' : undefined
             }
-            className={`block w-full pl-9 pr-3 py-2 border rounded-md text-sm text-slate-900 bg-white placeholder-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+            className={`block w-full pl-9 pr-3 py-2 border rounded-md text-xs sm:text-sm text-[#001428] bg-white placeholder-[#8993a4] transition-colors focus:outline-none focus:ring-2 focus:ring-[#045eb2] ${
               emailError
-                ? 'border-rose-300 bg-rose-50/20 text-rose-900 focus:border-rose-600 focus:ring-rose-500'
-                : 'border-slate-300 focus:border-blue-600'
+                ? 'border-[#fca5a5] bg-[#fef2f2]/30 text-[#991b1b] focus:border-[#dc2626] focus:ring-[#dc2626]'
+                : 'border-[#e2e8f0] focus:border-[#045eb2]'
             }`}
           />
         </div>
@@ -462,7 +462,7 @@ const LoginForm = ({
         {emailError && (
           <p
             id="email-error"
-            className="mt-1 text-xs text-rose-600 font-medium"
+            className="mt-1 text-xs text-[#dc2626] font-medium"
           >
             {emailError}
           </p>
@@ -475,7 +475,7 @@ const LoginForm = ({
 
           <label
             htmlFor="login-password"
-            className="block text-xs font-semibold text-slate-800 uppercase tracking-wide"
+            className="block text-[11px] font-bold text-[#001428] uppercase tracking-wide"
           >
             Password{' '}
             <span className="text-rose-600">*</span>
@@ -484,14 +484,14 @@ const LoginForm = ({
           <button
             type="button"
             onClick={onOpenForgotModal}
-            className="text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline cursor-pointer"
+            className="text-xs font-semibold text-[#045eb2] hover:text-[#034a8f] hover:underline cursor-pointer"
           >
             Forgot password?
           </button>
         </div>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8993a4]">
             <Lock className="w-4 h-4" />
           </div>
 
@@ -516,10 +516,10 @@ const LoginForm = ({
             aria-describedby={
               passwordError ? 'password-error' : undefined
             }
-            className={`block w-full pl-9 pr-10 py-2 border rounded-md text-sm text-slate-900 bg-white placeholder-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+            className={`block w-full pl-9 pr-10 py-2 border rounded-md text-xs sm:text-sm text-[#001428] bg-white placeholder-[#8993a4] transition-colors focus:outline-none focus:ring-2 focus:ring-[#045eb2] ${
               passwordError
-                ? 'border-rose-300 bg-rose-50/20 text-rose-900 focus:border-rose-600 focus:ring-rose-500'
-                : 'border-slate-300 focus:border-blue-600'
+                ? 'border-[#fca5a5] bg-[#fef2f2]/30 text-[#991b1b] focus:border-[#dc2626] focus:ring-[#dc2626]'
+                : 'border-[#e2e8f0] focus:border-[#045eb2]'
             }`}
           />
 
@@ -531,7 +531,7 @@ const LoginForm = ({
                 ? 'Hide password'
                 : 'Show password'
             }
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#8993a4] hover:text-[#001428] cursor-pointer"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -544,7 +544,7 @@ const LoginForm = ({
         {passwordError && (
           <p
             id="password-error"
-            className="mt-1 text-xs text-rose-600 font-medium"
+            className="mt-1 text-xs text-[#dc2626] font-medium"
           >
             {passwordError}
           </p>
@@ -554,47 +554,49 @@ const LoginForm = ({
       {/* Remember Me */}
       <div className="flex items-center justify-between text-xs pt-0.5">
 
-        <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
+        <label className="flex items-center gap-2 text-[#43474d] cursor-pointer select-none">
           <input
             type="checkbox"
             checked={rememberMe}
             onChange={(e) =>
               setRememberMe(e.target.checked)
             }
-            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+            className="w-4 h-4 rounded border-[#cbd5e1] text-[#045eb2] focus:ring-[#045eb2] focus:ring-offset-0"
           />
 
-          <span>
+          <span className="text-xs font-medium">
             Remember me on this device
           </span>
         </label>
 
-        <span className="text-[11px] text-slate-400 font-mono">
+        <span className="text-[10px] text-[#8993a4] font-mono">
           TLS 1.3 Secure
         </span>
       </div>
 
       {/* Submit */}
       <div className="pt-2">
-        <Button
+        <button
           type="submit"
-          variant="primary"
-          size="lg"
-          loading={isLoading}
           disabled={isLoading}
-          className="w-full text-sm font-bold bg-blue-700 hover:bg-blue-800 active:bg-blue-900 py-2.5"
-          icon={ArrowRight}
-          iconPosition="right"
+          className="w-full py-2.5 px-4 rounded-md bg-[#045eb2] hover:bg-[#034a8f] active:bg-[#003264] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
-        </Button>
+          {isLoading ? (
+            <span>Signing in...</span>
+          ) : (
+            <>
+              <span>Sign In</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
       </div>
 
       {/* Support */}
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+      <div className="pt-3 border-t border-[#f1f5f9] flex items-center justify-between text-xs text-[#43474d]">
 
-        <div className="flex items-center gap-1 text-slate-500">
-          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-1 text-[#64748b]">
+          <HelpCircle className="w-3.5 h-3.5 text-[#8993a4]" />
 
           <span>
             Need help signing in?
@@ -604,20 +606,20 @@ const LoginForm = ({
         <button
           type="button"
           onClick={onOpenSupportModal}
-          className="font-semibold text-blue-700 hover:text-blue-900 hover:underline cursor-pointer"
+          className="font-semibold text-[#045eb2] hover:text-[#034a8f] hover:underline cursor-pointer"
         >
-          Contact SolutionBridge Support
+          Contact Support Desk
         </button>
       </div>
 
       {/* Terms */}
-      <p className="text-[11px] text-slate-500 text-center leading-normal pt-1">
+      <p className="text-[10px] text-[#8993a4] text-center leading-normal pt-1">
         By signing in, you agree to the platform's{' '}
-        <span className="text-slate-700 underline cursor-pointer">
+        <span className="text-[#43474d] underline cursor-pointer">
           Terms of Use
         </span>{' '}
         and{' '}
-        <span className="text-slate-700 underline cursor-pointer">
+        <span className="text-[#43474d] underline cursor-pointer">
           Privacy Policy
         </span>.
       </p>

@@ -43,94 +43,86 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[#f8f9ff] text-[#0d1c2e] font-sans flex flex-col selection:bg-[#d5e3fc] selection:text-[#001428]">
       
       {/* ========================================================================= */}
       {/* 1. GOVERNMENT-STYLE TOP HEADER & NAVIGATION */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs">
-        {/* Tricolor National Stripe */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#e2e8f0] shadow-xs">
+        {/* Official Top National Banner Stripe */}
         <div className="gov-header-stripe" />
 
         {/* Main Branding & Navigation Header */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
           
           {/* Left: Indian Gov-style Emblem & SolutionBridge Brand */}
-          <div className="flex items-center gap-3.5">
-            {/* National Emblem Inspired Geometric Crest */}
-            <div className="w-10 h-10 rounded-md bg-slate-900 text-amber-400 flex items-center justify-center font-serif font-bold text-lg shadow-sm border border-slate-800 shrink-0">
-              <Shield className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded bg-[#0f2942] text-[#89f5e7] flex items-center justify-center font-bold text-base shadow-xs border border-[#7991af]/30 shrink-0">
+              <Shield className="w-4.5 h-4.5 text-[#89f5e7]" />
             </div>
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-bold text-slate-950 tracking-tight leading-none">
+                <span className="text-base sm:text-lg font-bold text-[#001428] tracking-tight leading-none">
                   SolutionBridge
                 </span>
-                <span className="hidden lg:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 uppercase tracking-wider">
-                  GovTech Mission
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#eff4ff] text-[#003971] border border-[#d5e3fc] uppercase tracking-wider">
+                  National Portal
                 </span>
               </div>
-              <span className="text-[11px] text-slate-600 font-medium tracking-wide mt-0.5">
-                From Problems to Proven Solutions
+              <span className="text-[11px] text-[#43474d] font-medium tracking-wide mt-0.5">
+                From Problems to Proven Public Solutions
               </span>
             </div>
           </div>
 
           {/* Center: Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-700">
-            <button
-              onClick={() => scrollToSection('about')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
-            >
-              About
-            </button>
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-[#43474d]">
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
+              className="hover:text-[#045eb2] transition-colors cursor-pointer py-1"
             >
               How It Works
             </button>
             <button
               onClick={() => scrollToSection('stakeholders')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
+              className="hover:text-[#045eb2] transition-colors cursor-pointer py-1"
             >
-              Stakeholders
+              Portals
             </button>
             <button
               onClick={() => scrollToSection('features')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
+              className="hover:text-[#045eb2] transition-colors cursor-pointer py-1"
             >
-              Platform Features
-            </button>
-            <button
-              onClick={() => scrollToSection('pilots')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
-            >
-              Pilot Framework
+              Platform Capabilities
             </button>
             <button
               onClick={() => scrollToSection('transparency')}
-              className="hover:text-blue-700 transition-colors cursor-pointer py-1"
+              className="hover:text-[#045eb2] transition-colors cursor-pointer py-1"
             >
-              Transparency
+              Governance & Audit
             </button>
           </nav>
 
           {/* Right: Login & Mobile Menu Action */}
           <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1.5 bg-[#eff4ff] border border-[#d5e3fc] px-2.5 py-1 rounded-full text-[11px] font-semibold text-[#003971]">
+              <span className="w-2 h-2 rounded-full bg-[#0d9488] inline-block animate-pulse"></span>
+              <span>NIC Cloud: Active</span>
+            </div>
+
             <button
               onClick={() => navigate('/login')}
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-md shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0f2942] hover:bg-[#001428] text-white text-xs font-bold rounded-md shadow-xs transition-colors cursor-pointer"
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5 text-[#89f5e7]" />
               <span>Portal Login</span>
             </button>
 
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+              className="lg:hidden p-2 rounded-md text-[#43474d] hover:text-[#001428] hover:bg-[#eff4ff] focus:outline-none"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -192,58 +184,58 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 2. HERO SECTION */}
       {/* ========================================================================= */}
-      <section className="relative bg-white border-b border-slate-200 py-12 lg:py-16 overflow-hidden">
+      <section className="relative bg-white border-b border-[#e2e8f0] py-14 lg:py-20 overflow-hidden">
         {/* Subtle geometric government grid backdrop */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#0f172a_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[radial-gradient(#001428_1px,transparent_1px)] [background-size:24px_24px]" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
             {/* Hero Content (Left 7 Cols) */}
             <div className="lg:col-span-7 space-y-6">
               
               {/* Institutional pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-900 text-xs font-semibold">
-                <Shield className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                <span>National Innovation Procurement & Sandbox Platform</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#d5e3fc] text-[#003971] text-xs font-semibold">
+                <Shield className="w-3.5 h-3.5 text-[#045eb2] shrink-0" />
+                <span>National Innovation Procurement & Sandbox Platform • GFR Rule 194</span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-950 tracking-tight leading-[1.15]">
-                Bridging Government Problems with Proven Innovation
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#001428] tracking-tight leading-[1.15]">
+                Bridging Public Sector Challenges with Proven Startup Innovation
               </h1>
 
               {/* Supporting Text */}
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl font-normal">
-                SolutionBridge connects government departments with DPIIT-recognized technology startups to identify, test, validate, and procure innovative solutions for real-world public challenges.
+              <p className="text-sm sm:text-base text-[#43474d] leading-relaxed max-w-2xl font-normal">
+                SolutionBridge connects government departments with DPIIT-recognized technology startups to identify, pilot in controlled sandboxes, empirically validate, and directly procure innovative solutions for real-world public infrastructure.
               </p>
 
               {/* Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3.5">
                 <button
                   onClick={() => handleRoleNavigation('Startup')}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold shadow-xs transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-[#0f2942] hover:bg-[#001428] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-4 h-4 text-[#89f5e7]" />
                   <span>Explore Government Challenges</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
                 <button
                   onClick={() => handleRoleNavigation('Startup')}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-sm font-bold shadow-xs transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-white hover:bg-[#eff4ff] text-[#0d1c2e] border border-[#c3c6ce] text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  <Rocket className="w-4 h-4 text-slate-600" />
-                  <span>Register as Startup</span>
+                  <Rocket className="w-4 h-4 text-[#045eb2]" />
+                  <span>Register as DPIIT Startup</span>
                 </button>
               </div>
 
               {/* Text link for Gov / Expert Login */}
-              <div className="pt-1 flex items-center gap-2 text-xs font-medium text-slate-600">
-                <span>Are you a Public Officer or Evaluator?</span>
+              <div className="pt-1 flex items-center gap-2 text-xs font-medium text-[#74777e]">
+                <span>Are you a Public Procurement Officer or Evaluator?</span>
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-blue-700 hover:text-blue-900 font-bold underline inline-flex items-center gap-1 cursor-pointer"
+                  className="text-[#045eb2] hover:text-[#003971] font-bold underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   <span>Government / Expert Login</span>
                   <ArrowRight className="w-3 h-3" />
@@ -251,18 +243,18 @@ const LandingPage = () => {
               </div>
             </div>
 
-            {/* Hero Image / Innovation Sandbox Graphic (Hidden on small/medium screens to prevent moving down, scales dynamically on desktop) */}
+            {/* Hero Image / Innovation Sandbox Graphic */}
             <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative">
-              <div className="relative w-full max-w-md xl:max-w-lg mx-auto transition-all duration-300">
-                {/* Subtle ambient backdrop glow */}
-                <div className="absolute -inset-2 bg-gradient-to-tr from-blue-500/20 via-indigo-500/15 to-transparent rounded-2xl blur-xl -z-10 pointer-events-none" />
+              <div className="relative w-full max-w-md xl:max-w-lg mx-auto">
+                {/* Subtle ambient backdrop */}
+                <div className="absolute -inset-2 bg-gradient-to-tr from-[#045eb2]/10 via-[#0d9488]/10 to-transparent rounded-2xl blur-xl -z-10 pointer-events-none" />
                 
                 {/* Image Container with clean border & shadow */}
-                <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-lg p-2 group hover:shadow-xl transition-all duration-300">
+                <div className="relative overflow-hidden rounded-xl border border-[#e2e8f0] bg-white shadow-md p-2">
                   <img
                     src={heroIllustration}
                     alt="GovTech Innovation Ecosystem & Digital Sandbox Platform"
-                    className="w-full h-auto object-contain rounded-xl transition-transform duration-500 group-hover:scale-[1.01]"
+                    className="w-full h-auto object-contain rounded-lg"
                     loading="eager"
                   />
                 </div>
@@ -275,57 +267,57 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 3. TRUST / PLATFORM STRIP */}
       {/* ========================================================================= */}
-      <section className="bg-slate-100 border-b border-slate-200 py-6 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-              Built for transparent, evidence-based public innovation
+      <section className="bg-[#eff4ff] border-b border-[#d5e3fc] py-6 px-4 sm:px-8">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="text-center mb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#003971]">
+              Built for transparent, empirical, and compliant public innovation
             </span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             
             {/* Pillar 1 */}
-            <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">
+            <div className="bg-white p-4 rounded-md border border-[#d5e3fc] shadow-2xs flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#045eb2] flex items-center justify-center shrink-0 border border-[#d5e3fc]">
                 <Rocket className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 truncate">DPIIT Startup Ecosystem</div>
-                <div className="text-[11px] text-slate-500 truncate">Recognized Deep-Tech Innovators</div>
+                <div className="text-xs font-bold text-[#001428] truncate">DPIIT Startup Ecosystem</div>
+                <div className="text-[11px] text-[#74777e] truncate">Recognized Deep-Tech Innovators</div>
               </div>
             </div>
 
             {/* Pillar 2 */}
-            <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-slate-100 text-slate-800 flex items-center justify-center shrink-0 border border-slate-200">
+            <div className="bg-white p-4 rounded-md border border-[#d5e3fc] shadow-2xs flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#0f2942] flex items-center justify-center shrink-0 border border-[#d5e3fc]">
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 truncate">Government Departments</div>
-                <div className="text-[11px] text-slate-500 truncate">Central & State Procuring Entities</div>
+                <div className="text-xs font-bold text-[#001428] truncate">Government Departments</div>
+                <div className="text-[11px] text-[#74777e] truncate">Central & State Procuring Entities</div>
               </div>
             </div>
 
             {/* Pillar 3 */}
-            <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 border border-purple-100">
+            <div className="bg-white p-4 rounded-md border border-[#d5e3fc] shadow-2xs flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#4f46e5] flex items-center justify-center shrink-0 border border-[#d5e3fc]">
                 <Award className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 truncate">Independent Experts</div>
-                <div className="text-[11px] text-slate-500 truncate">Scientific & Evaluation Panels</div>
+                <div className="text-xs font-bold text-[#001428] truncate">Independent Experts</div>
+                <div className="text-[11px] text-[#74777e] truncate">Scientific & Evaluation Panels</div>
               </div>
             </div>
 
             {/* Pillar 4 */}
-            <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+            <div className="bg-white p-4 rounded-md border border-[#d5e3fc] shadow-2xs flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#0d9488] flex items-center justify-center shrink-0 border border-[#d5e3fc]">
                 <FileCheck2 className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 truncate">Evidence-Based Procurement</div>
-                <div className="text-[11px] text-slate-500 truncate">Verified Performance Audits</div>
+                <div className="text-xs font-bold text-[#001428] truncate">Evidence-Based Procurement</div>
+                <div className="text-[11px] text-[#74777e] truncate">Verified Performance Audits</div>
               </div>
             </div>
 
@@ -336,19 +328,19 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 5. HOW SOLUTIONBRIDGE WORKS (6-STEP LIFECYCLE) */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="py-14 sm:py-18 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+      <section id="how-it-works" className="py-14 sm:py-18 bg-white border-b border-[#e2e8f0]">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded shadow-2xs">
-              <Activity className="w-3.5 h-3.5 text-blue-600" />
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#003971] bg-[#eff4ff] border border-[#d5e3fc] px-2.5 py-1 rounded shadow-2xs">
+              <Activity className="w-3.5 h-3.5 text-[#045eb2]" />
               <span>End-to-End Procurement Lifecycle</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#001428] tracking-tight">
               From Problem to Procurement
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              A structured six-step workflow ensuring accountability, empirical verification, and direct procurement qualification for validated innovations.
+            <p className="text-sm sm:text-base text-[#43474d] leading-relaxed">
+              A structured six-step workflow ensuring administrative accountability, empirical verification, and direct procurement qualification for validated innovations.
             </p>
           </div>
 
@@ -356,85 +348,85 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Step 1 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-100">
+                <span className="text-xs font-extrabold text-[#003971] bg-[#eff4ff] px-2.5 py-1 rounded border border-[#d5e3fc]">
                   01 — Define
                 </span>
-                <Target className="w-5 h-5 text-slate-400" />
+                <Target className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Problem Definition</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Problem Definition</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 Government departments identify real-world public sector challenges and define clear technical requirements, target KPIs, and allocated budgets.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100">
+                <span className="text-xs font-extrabold text-[#002e29] bg-[#89f5e7]/40 px-2.5 py-1 rounded border border-[#0d9488]/30">
                   02 — Discover
                 </span>
-                <Rocket className="w-5 h-5 text-slate-400" />
+                <Rocket className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Startup Proposals</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Startup Proposals</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 DPIIT-recognized startups discover relevant challenges, verify eligibility criteria, and submit detailed technical proposals and milestone plans.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-purple-700 bg-purple-50 px-2.5 py-1 rounded border border-purple-100">
+                <span className="text-xs font-extrabold text-[#312e81] bg-[#e0e7ff] px-2.5 py-1 rounded border border-[#c7d2fe]">
                   03 — Evaluate
                 </span>
-                <Award className="w-5 h-5 text-slate-400" />
+                <Award className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Expert Scoring</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Expert Scoring</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 Independent technical panels evaluate proposals using a weighted 5-factor scorecard (Feasibility, Innovation, Cost, Scale, Risk) to shortlist top solutions.
               </p>
             </div>
 
             {/* Step 4 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded border border-amber-100">
+                <span className="text-xs font-extrabold text-[#78350f] bg-[#fef3c7] px-2.5 py-1 rounded border border-[#fde68a]">
                   04 — Pilot
                 </span>
-                <Zap className="w-5 h-5 text-slate-400" />
+                <Zap className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Controlled Sandboxes</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Controlled Sandboxes</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 Selected startups deploy solutions in real-world facilities (e.g., reservoirs, hospitals, transit corridors) with real-time KPI telemetry monitoring.
               </p>
             </div>
 
             {/* Step 5 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-teal-700 bg-teal-50 px-2.5 py-1 rounded border border-teal-100">
+                <span className="text-xs font-extrabold text-[#134e4a] bg-[#ccfbf1] px-2.5 py-1 rounded border border-[#99f6e4]">
                   05 — Validate
                 </span>
-                <ShieldCheck className="w-5 h-5 text-slate-400" />
+                <ShieldCheck className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Outcome Verification</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Outcome Verification</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 Independent evaluators audit field test reports, verify actual metrics against historical baselines and target KPIs, and submit validation sign-offs.
               </p>
             </div>
 
             {/* Step 6 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors">
+            <div className="bg-white p-6 border border-[#e2e8f0] rounded-md hover:border-[#045eb2] transition-colors shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-100">
+                <span className="text-xs font-extrabold text-[#003971] bg-[#eff4ff] px-2.5 py-1 rounded border border-[#d5e3fc]">
                   06 — Procure
                 </span>
-                <CheckCircle2 className="w-5 h-5 text-slate-400" />
+                <CheckCircle2 className="w-5 h-5 text-[#74777e]" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Procurement & Scale</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <h3 className="text-base font-bold text-[#001428] mb-2">Procurement & Scale</h3>
+              <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                 Successfully validated solutions receive Direct Procurement Orders (DPO) under tender exemption rules with automated milestone treasury disbursements.
               </p>
             </div>
@@ -446,18 +438,18 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 6. ROLE-BASED ENTRY SECTION */}
       {/* ========================================================================= */}
-      <section id="stakeholders" className="py-14 sm:py-18 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+      <section id="stakeholders" className="py-14 sm:py-18 bg-[#f8f9ff] border-b border-[#e2e8f0]">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
-              <Layers className="w-3.5 h-3.5 text-blue-700" />
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#43474d] bg-white border border-[#e2e8f0] px-2.5 py-1 rounded shadow-2xs">
+              <Layers className="w-3.5 h-3.5 text-[#045eb2]" />
               <span>Role-Tailored Workspaces</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#001428] tracking-tight">
               Built for Every Stakeholder
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+            <p className="text-sm sm:text-base text-[#43474d] leading-relaxed">
               Purpose-built interfaces tailored to the distinct workflows of government officers, startup founders, and technical evaluators.
             </p>
           </div>
@@ -465,29 +457,29 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Role 1: Government */}
-            <div className="gov-card p-6 sm:p-8 bg-white border border-slate-200 rounded-lg flex flex-col justify-between shadow-2xs hover:shadow-sm transition-shadow">
+            <div className="bg-white p-6 sm:p-8 border border-[#e2e8f0] rounded-lg flex flex-col justify-between shadow-xs hover:shadow-sm transition-shadow">
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs">
-                  <Building2 className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-lg bg-[#0f2942] text-white flex items-center justify-center font-bold shadow-xs">
+                  <Building2 className="w-6 h-6 text-[#89f5e7]" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Procuring Entity</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-0.5">Government Departments</h3>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#045eb2]">Procuring Entity</span>
+                  <h3 className="text-lg font-bold text-[#001428] mt-0.5">Government Departments</h3>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Identify challenges, evaluate solutions, run sandboxed pilots, and procure proven innovations through structured public workflows.
+                <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
+                  Identify challenges, evaluate proposals, run sandboxed pilots, and procure proven innovations through structured public workflows.
                 </p>
-                <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                <div className="pt-2 border-t border-[#eff4ff] space-y-2 text-xs text-[#0d1c2e]">
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#045eb2] shrink-0" />
                     <span>Publish departmental problem statements</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#045eb2] shrink-0" />
                     <span>Real-time sandbox telemetry & KPI tracking</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#045eb2] shrink-0" />
                     <span>Direct Procurement Order (DPO) issuance</span>
                   </div>
                 </div>
@@ -496,7 +488,7 @@ const LandingPage = () => {
               <div className="pt-6">
                 <button
                   onClick={() => handleRoleNavigation('Government')}
-                  className="w-full py-2.5 px-4 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-md bg-[#0f2942] hover:bg-[#001428] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <span>Government Portal</span>
                   <ArrowRight className="w-4 h-4" />
@@ -505,35 +497,35 @@ const LandingPage = () => {
             </div>
 
             {/* Role 2: Startups */}
-            <div className="gov-card p-6 sm:p-8 bg-white border-2 border-blue-600/30 rounded-lg flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow relative">
+            <div className="bg-white p-6 sm:p-8 border-2 border-[#045eb2]/40 rounded-lg flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow relative">
               <div className="absolute top-4 right-4">
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-[#eff4ff] text-[#003971] border border-[#d5e3fc] rounded">
                   Open Submissions
                 </span>
               </div>
 
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold shadow-xs">
-                  <Rocket className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-lg bg-[#045eb2] text-white flex items-center justify-center font-bold shadow-xs">
+                  <Rocket className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-700">DPIIT Innovators</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-0.5">Startups & Innovators</h3>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#045eb2]">DPIIT Innovators</span>
+                  <h3 className="text-lg font-bold text-[#001428] mt-0.5">Startups & Innovators</h3>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                   Discover public-sector challenges and bring innovative technology into real-world deployment with transparent milestone disbursements.
                 </p>
-                <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                <div className="pt-2 border-t border-[#eff4ff] space-y-2 text-xs text-[#0d1c2e]">
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#0d9488] shrink-0" />
                     <span>Browse sector-wise government challenges</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#0d9488] shrink-0" />
                     <span>Submit DPRs & upload field pilot evidence</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#0d9488] shrink-0" />
                     <span>Automated milestone treasury disbursements</span>
                   </div>
                 </div>
@@ -542,7 +534,7 @@ const LandingPage = () => {
               <div className="pt-6">
                 <button
                   onClick={() => handleRoleNavigation('Startup')}
-                  className="w-full py-2.5 px-4 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-md bg-[#045eb2] hover:bg-[#003971] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <span>Explore Challenges</span>
                   <ArrowRight className="w-4 h-4" />
@@ -551,29 +543,29 @@ const LandingPage = () => {
             </div>
 
             {/* Role 3: Experts */}
-            <div className="gov-card p-6 sm:p-8 bg-white border border-slate-200 rounded-lg flex flex-col justify-between shadow-2xs hover:shadow-sm transition-shadow">
+            <div className="bg-white p-6 sm:p-8 border border-[#e2e8f0] rounded-lg flex flex-col justify-between shadow-xs hover:shadow-sm transition-shadow">
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-700 text-white flex items-center justify-center font-bold shadow-xs">
-                  <Award className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-lg bg-[#4f46e5] text-white flex items-center justify-center font-bold shadow-xs">
+                  <Award className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-purple-700">Technical Screening</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-0.5">Expert Evaluators</h3>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#4f46e5]">Technical Screening</span>
+                  <h3 className="text-lg font-bold text-[#001428] mt-0.5">Expert Evaluators</h3>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
                   Provide independent technical evaluation and validate pilot outcomes with rigorous scientific and operational scorecards.
                 </p>
-                <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                <div className="pt-2 border-t border-[#eff4ff] space-y-2 text-xs text-[#0d1c2e]">
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#4f46e5] shrink-0" />
                     <span>5-factor weighted technical evaluation</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#4f46e5] shrink-0" />
                     <span>NABL lab test & telemetry verification</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#4f46e5] shrink-0" />
                     <span>Independent sign-off for DPO eligibility</span>
                   </div>
                 </div>
@@ -582,7 +574,7 @@ const LandingPage = () => {
               <div className="pt-6">
                 <button
                   onClick={() => handleRoleNavigation('Expert / Evaluator')}
-                  className="w-full py-2.5 px-4 rounded-md bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-md bg-[#4f46e5] hover:bg-[#4338ca] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <span>Expert Portal</span>
                   <ArrowRight className="w-4 h-4" />
@@ -597,18 +589,18 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 7. FEATURE / VALUE SECTION */}
       {/* ========================================================================= */}
-      <section id="features" className="py-14 sm:py-18 bg-slate-50 border-b border-slate-200">
+      <section id="features" className="py-14 sm:py-18 bg-[#f8f9ff] border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#045eb2] bg-[#eff4ff] border border-[#d5e3fc] px-2.5 py-1 rounded">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Engineered for Integrity & Speed</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#001428] tracking-tight">
               Why SolutionBridge?
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
               Designed specifically to resolve the institutional bottlenecks of government technology procurement while upholding public finance standards.
             </p>
           </div>
@@ -616,79 +608,79 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Feature 1 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center mb-4 border border-blue-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#045eb2]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#eff4ff] text-[#045eb2] flex items-center justify-center mb-4 border border-[#d5e3fc]">
                 <Target className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Structured Problem Statements
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Standardized challenge definitions with operational boundaries, target metrics, and defined pilot funding caps.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center mb-4 border border-emerald-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#0d9488]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#f0fdfa] text-[#0d9488] flex items-center justify-center mb-4 border border-[#ccfbf1]">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Rule-Based Startup Eligibility
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Automated screening on DPIIT recognition, prototype readiness (TRL-7+), and compliance certifications.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-purple-50 text-purple-700 flex items-center justify-center mb-4 border border-purple-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#4f46e5]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#eef2ff] text-[#4f46e5] flex items-center justify-center mb-4 border border-[#e0e7ff]">
                 <Scale className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Weighted Expert Evaluation
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Standardized 10-point scoring matrix spanning technical feasibility, innovation, cost-benefit, and risk mitigation.
               </p>
             </div>
 
             {/* Feature 4 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center mb-4 border border-amber-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#d97706]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#fffbeb] text-[#d97706] flex items-center justify-center mb-4 border border-[#fef3c7]">
                 <Activity className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Pilot KPI Monitoring
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Continuous telemetry, sensor uptime tracking, and milestone-linked evidence validation in real field conditions.
               </p>
             </div>
 
             {/* Feature 5 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-teal-50 text-teal-700 flex items-center justify-center mb-4 border border-teal-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#0d9488]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#f0fdfa] text-[#0d9488] flex items-center justify-center mb-4 border border-[#ccfbf1]">
                 <ClipboardCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Independent Validation
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Third-party scientific and audit committee validation comparing baseline vs actual measured performance.
               </p>
             </div>
 
             {/* Feature 6 */}
-            <div className="gov-card p-6 bg-white border border-slate-200 rounded-lg">
-              <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center mb-4 border border-blue-100">
+            <div className="p-6 bg-white border border-[#e2e8f0] rounded-lg shadow-xs hover:border-[#045eb2]/40 transition-colors">
+              <div className="w-10 h-10 rounded-md bg-[#eff4ff] text-[#045eb2] flex items-center justify-center mb-4 border border-[#d5e3fc]">
                 <FileCheck2 className="w-5 h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-[#001428] mb-1.5">
                 Transparent Procurement Workflow
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-[#43474d] leading-relaxed">
                 Legitimate tender exemption qualification, Direct Procurement Orders (DPO), and automated milestone disbursements.
               </p>
             </div>
@@ -700,79 +692,76 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 8. TRANSPARENCY SECTION */}
       {/* ========================================================================= */}
-      <section id="transparency" className="py-14 sm:py-18 bg-slate-50 border-b border-slate-200">
+      <section id="transparency" className="py-14 sm:py-18 bg-white border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-700" />
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#43474d] bg-[#f8f9ff] border border-[#e2e8f0] px-2.5 py-1 rounded shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#045eb2]" />
               <span>Institutional Governance</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#001428] tracking-tight">
               Transparent by Design
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#43474d] leading-relaxed">
               Every phase of the innovation lifecycle creates an immutable, verifiable public record—protecting public funds while accelerating adoption.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            {/* 4 Transparency Principles (7 Cols) */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Principle 1 */}
-              <div className="gov-card p-5 bg-white border border-slate-200 rounded-lg">
-                <div className="w-8 h-8 rounded bg-blue-50 text-blue-700 flex items-center justify-center font-bold mb-3 border border-blue-100">
-                  <Scale className="w-4 h-4" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-1">
-                  Defined Evaluation Criteria
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Pre-published evaluation parameters and scoring weights published alongside the challenge notice.
-                </p>
+            {/* Principle 1 */}
+            <div className="p-5 bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#045eb2] flex items-center justify-center font-bold mb-3 border border-[#d5e3fc]">
+                <Scale className="w-4 h-4" />
               </div>
-
-              {/* Principle 2 */}
-              <div className="gov-card p-5 bg-white border border-slate-200 rounded-lg">
-                <div className="w-8 h-8 rounded bg-purple-50 text-purple-700 flex items-center justify-center font-bold mb-3 border border-purple-100">
-                  <Award className="w-4 h-4" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-1">
-                  Independent Expert Review
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Multi-member scientific panels evaluate proposals with blind grading and conflict disclosures.
-                </p>
-              </div>
-
-              {/* Principle 3 */}
-              <div className="gov-card p-5 bg-white border border-slate-200 rounded-lg">
-                <div className="w-8 h-8 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold mb-3 border border-emerald-100">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-1">
-                  Evidence-Backed Validation
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Physical test reports, NABL certificates, and automated IoT telemetry logs uploaded to the portal.
-                </p>
-              </div>
-
-              {/* Principle 4 */}
-              <div className="gov-card p-5 bg-white border border-slate-200 rounded-lg">
-                <div className="w-8 h-8 rounded bg-slate-100 text-slate-800 flex items-center justify-center font-bold mb-3 border border-slate-200">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-1">
-                  Traceable Procurement Workflow
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Complete audit log from problem submission to milestone disbursement under public financial norms.
-                </p>
-              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-[#001428] mb-1">
+                Defined Evaluation Criteria
+              </h3>
+              <p className="text-xs text-[#43474d] leading-relaxed">
+                Pre-published evaluation parameters and scoring weights published alongside the challenge notice.
+              </p>
             </div>
+
+            {/* Principle 2 */}
+            <div className="p-5 bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg">
+              <div className="w-8 h-8 rounded bg-[#eef2ff] text-[#4f46e5] flex items-center justify-center font-bold mb-3 border border-[#e0e7ff]">
+                <Award className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-[#001428] mb-1">
+                Independent Expert Review
+              </h3>
+              <p className="text-xs text-[#43474d] leading-relaxed">
+                Multi-member scientific panels evaluate proposals with blind grading and conflict disclosures.
+              </p>
+            </div>
+
+            {/* Principle 3 */}
+            <div className="p-5 bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg">
+              <div className="w-8 h-8 rounded bg-[#f0fdfa] text-[#0d9488] flex items-center justify-center font-bold mb-3 border border-[#ccfbf1]">
+                <FileText className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-[#001428] mb-1">
+                Evidence-Backed Validation
+              </h3>
+              <p className="text-xs text-[#43474d] leading-relaxed">
+                Physical test reports, NABL certificates, and automated IoT telemetry logs uploaded to the portal.
+              </p>
+            </div>
+
+            {/* Principle 4 */}
+            <div className="p-5 bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg">
+              <div className="w-8 h-8 rounded bg-[#eff4ff] text-[#001428] flex items-center justify-center font-bold mb-3 border border-[#d5e3fc]">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-[#001428] mb-1">
+                Traceable Procurement Workflow
+              </h3>
+              <p className="text-xs text-[#43474d] leading-relaxed">
+                Complete audit log from problem submission to milestone disbursement under public financial norms.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
@@ -780,11 +769,11 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 10. CALL TO ACTION SECTION */}
       {/* ========================================================================= */}
-      <section className="bg-slate-900 text-white py-14 sm:py-16 border-b border-slate-800">
+      <section className="bg-[#001428] text-white py-14 sm:py-16 border-b border-[#0f2942]">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 text-center space-y-6">
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/60 border border-blue-700/60 text-blue-300 text-xs font-semibold">
-            <Rocket className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0f2942] border border-[#045eb2]/40 text-[#89f5e7] text-xs font-semibold">
+            <Rocket className="w-3.5 h-3.5 text-[#0d9488]" />
             <span>Accelerating Public Sector Innovation</span>
           </div>
 
@@ -792,14 +781,14 @@ const LandingPage = () => {
             Have a Government Problem to Solve?
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-[#d5e3fc] max-w-2xl mx-auto leading-relaxed font-normal">
             Bring the challenge to the innovation ecosystem and discover solutions that can be tested, validated, and scaled across state and national infrastructure.
           </p>
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
             <button
               onClick={() => handleRoleNavigation('Startup')}
-              className="w-full sm:w-auto px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 rounded-md bg-[#045eb2] hover:bg-[#034a8f] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <Search className="w-4 h-4" />
               <span>Explore Challenges</span>
@@ -808,18 +797,18 @@ const LandingPage = () => {
 
             <button
               onClick={() => handleRoleNavigation('Startup')}
-              className="w-full sm:w-auto px-6 py-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-bold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 rounded-md bg-[#0f2942] hover:bg-[#163859] text-white border border-[#045eb2]/50 text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              <Rocket className="w-4 h-4 text-blue-400" />
+              <Rocket className="w-4 h-4 text-[#89f5e7]" />
               <span>Startup Registration</span>
             </button>
           </div>
 
-          <div className="pt-2 text-xs text-slate-400">
+          <div className="pt-2 text-xs text-[#8993a4]">
             Government departments can publish challenges directly from the{' '}
             <button
               onClick={() => handleRoleNavigation('Government')}
-              className="text-blue-400 hover:text-blue-300 underline font-semibold cursor-pointer"
+              className="text-[#89f5e7] hover:underline font-semibold cursor-pointer"
             >
               Government Portal
             </button>
@@ -832,7 +821,7 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 11. GOVERNMENT PORTAL FOOTER */}
       {/* ========================================================================= */}
-      <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-800">
+      <footer className="bg-[#001428] text-[#8993a4] text-xs border-t border-[#0f2942]">
         
         {/* Tricolor stripe on top of footer */}
         <div className="gov-header-stripe" />
@@ -843,32 +832,32 @@ const LandingPage = () => {
             {/* Brand Column (2 cols wide on desktop) */}
             <div className="col-span-2 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-blue-700 flex items-center justify-center font-bold text-white shadow-xs">
-                  <Shield className="w-4 h-4" />
+                <div className="w-8 h-8 rounded bg-[#045eb2] flex items-center justify-center font-bold text-white shadow-xs">
+                  <Shield className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <span className="font-bold text-sm text-white tracking-wide block">
                     SolutionBridge
                   </span>
-                  <span className="text-[10px] text-slate-500 font-medium">
+                  <span className="text-[10px] text-[#d5e3fc]/70 font-medium">
                     From Problems to Proven Solutions
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+              <p className="text-xs text-[#8993a4] leading-relaxed max-w-sm">
                 National Innovation Procurement Platform facilitating problem definition, sandbox testing, independent validation, and direct procurement for DPIIT-recognized startups.
               </p>
 
-              <div className="text-[11px] text-slate-500 space-y-1">
-                <div>Innovation Procurement Mission</div>
+              <div className="text-[11px] text-[#8993a4] space-y-1">
+                <div className="font-medium text-[#d5e3fc]">Innovation Procurement Mission</div>
                 <div>Government of India</div>
               </div>
             </div>
 
             {/* Column: Platform */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
                 Platform
               </h4>
               <ul className="space-y-2 text-xs">
@@ -897,7 +886,7 @@ const LandingPage = () => {
 
             {/* Column: Resources */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
                 Resources
               </h4>
               <ul className="space-y-2 text-xs">
@@ -926,7 +915,7 @@ const LandingPage = () => {
 
             {/* Column: Support & Legal */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
                 Support & Legal
               </h4>
               <ul className="space-y-2 text-xs">
@@ -941,13 +930,13 @@ const LandingPage = () => {
                   </a>
                 </li>
                 <li>
-                  <span className="text-slate-500">Privacy Policy</span>
+                  <span className="text-[#64748b]">Privacy Policy</span>
                 </li>
                 <li>
-                  <span className="text-slate-500">Terms of Use</span>
+                  <span className="text-[#64748b]">Terms of Use</span>
                 </li>
                 <li>
-                  <span className="text-slate-500">Accessibility</span>
+                  <span className="text-[#64748b]">Accessibility</span>
                 </li>
               </ul>
             </div>
@@ -955,11 +944,11 @@ const LandingPage = () => {
           </div>
 
           {/* Bottom Copyright Bar */}
-          <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
+          <div className="mt-10 pt-6 border-t border-[#0f2942] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#8993a4]">
             <div>
               © 2026 SolutionBridge. Innovation Procurement Platform.
             </div>
-            <div className="flex items-center gap-4 text-slate-500">
+            <div className="flex items-center gap-4 text-[#8993a4]">
               <span>Standard Public Procurement Protocol</span>
               <span>•</span>
               <span>GovCloud Secure Node</span>

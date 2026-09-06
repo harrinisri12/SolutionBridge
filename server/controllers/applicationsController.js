@@ -2,7 +2,73 @@ import { supabaseAdmin } from '../config/supabase.js';
 import { ApiResponse } from '../utils/response.js';
 import { logAudit, AuditActions } from '../services/auditService.js';
 import { createNotification } from '../services/notificationService.js';
+import { storageService } from '../services/storageService.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Upload supporting document for startup application
+ * POST /api/applications/upload-document
+ */
+export const uploadApplicationDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const file = req.file;
+    const { document_type = 'Technical Proposal' } = req.body;
+
+    if (!file) {
+      return ApiResponse.error(res, 'No file uploaded', 422, 'FILE_REQUIRED');
+    }
+
+    // 1. Verify startup profile
+    let { data: startup } = await supabaseAdmin
+      .from('startups')
+      .select('id, name')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!startup) {
+      return ApiResponse.error(res, 'Startup profile required to upload application documents', 403, 'STARTUP_REQUIRED');
+    }
+
+    const cleanFileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `applications/${startup.id}/${Date.now()}_${cleanFileName}`;
+
+    const { success, error: uploadErr } = await storageService.uploadFile(
+      storageService.BUCKET_STARTUP_DOCS,
+      storagePath,
+      file.buffer,
+      file.mimetype || 'application/octet-stream'
+    );
+
+    if (!success || uploadErr) {
+      logger.error('Error uploading document to Supabase storage', uploadErr);
+      return ApiResponse.error(res, 'Failed to upload document to storage', 500, 'STORAGE_ERROR');
+    }
+
+    // Generate signed preview/download URL
+    const { signedUrl } = await storageService.getSignedUrl(
+      storageService.BUCKET_STARTUP_DOCS,
+      storagePath,
+      86400 // 24 hours
+    );
+
+    return ApiResponse.success(
+      res,
+      {
+        file_name: file.originalname,
+        file_url: storagePath,
+        downloadUrl: signedUrl || storagePath,
+        document_type,
+        file_size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+      },
+      'Document uploaded successfully',
+      201
+    );
+  } catch (error) {
+    logger.error('Error in uploadApplicationDocument controller', error);
+    return ApiResponse.error(res, 'Failed to upload document', 500, 'SERVER_ERROR');
+  }
+};
 
 /**
  * List applications based on user role and permissions
@@ -75,7 +141,42 @@ export const listApplications = async (req, res) => {
       return ApiResponse.error(res, 'Failed to fetch applications', 500, 'SERVER_ERROR');
     }
 
-    return ApiResponse.success(res, { applications: applications || [] }, 'Applications retrieved successfully');
+    // Enrich with application_details, application_documents, and expert_assignments if accessible
+    let enriched = applications || [];
+    try {
+      const appIds = enriched.map((a) => a.id);
+      if (appIds.length > 0) {
+        const [{ data: detailsList }, { data: docsList }, { data: assignList }] = await Promise.all([
+          supabaseAdmin.from('application_details').select('*').in('application_id', appIds),
+          supabaseAdmin.from('application_documents').select('*').in('application_id', appIds),
+          supabaseAdmin.from('expert_assignments').select('*, experts(id, expertise, organization, profiles(full_name, email))').in('application_id', appIds)
+        ]);
+
+        const detailsMap = new Map((detailsList || []).map((d) => [d.application_id, d]));
+        const docsMap = new Map();
+        (docsList || []).forEach((doc) => {
+          if (!docsMap.has(doc.application_id)) docsMap.set(doc.application_id, []);
+          docsMap.get(doc.application_id).push(doc);
+        });
+
+        const assignMap = new Map();
+        (assignList || []).forEach((asg) => {
+          if (!assignMap.has(asg.application_id)) assignMap.set(asg.application_id, []);
+          assignMap.get(asg.application_id).push(asg);
+        });
+
+        enriched = enriched.map((a) => ({
+          ...a,
+          details: detailsMap.get(a.id) || null,
+          documents: docsMap.get(a.id) || [],
+          expert_assignments: assignMap.get(a.id) || []
+        }));
+      }
+    } catch (enrichErr) {
+      logger.warn('Could not enrich applications with details/documents/assignments', enrichErr);
+    }
+
+    return ApiResponse.success(res, { applications: enriched }, 'Applications retrieved successfully');
   } catch (error) {
     logger.error('Error in listApplications controller', error);
     return ApiResponse.error(res, 'Failed to retrieve applications', 500, 'SERVER_ERROR');
@@ -140,7 +241,76 @@ export const getApplicationById = async (req, res) => {
       }
     }
 
-    return ApiResponse.success(res, { application }, 'Application details retrieved');
+    // Fetch details, documents & assignments
+    let details = null;
+    let documents = [];
+    let expertAssignments = [];
+
+    try {
+      const { data: det } = await supabaseAdmin
+        .from('application_details')
+        .select('*')
+        .eq('application_id', id)
+        .maybeSingle();
+      details = det;
+    } catch (e) {
+      logger.warn('Failed to fetch application_details', e);
+    }
+
+    try {
+      const { data: asgs } = await supabaseAdmin
+        .from('expert_assignments')
+        .select('*, experts(id, expertise, organization, profiles(full_name, email))')
+        .eq('application_id', id);
+      expertAssignments = asgs || [];
+    } catch (e) {
+      logger.warn('Failed to fetch expert_assignments', e);
+    }
+
+    try {
+      const { data: docs } = await supabaseAdmin
+        .from('application_documents')
+        .select('*')
+        .eq('application_id', id)
+        .order('created_at', { ascending: true });
+
+      if (Array.isArray(docs)) {
+        documents = await Promise.all(
+          docs.map(async (d) => {
+            let downloadUrl = d.file_url;
+            if (d.file_url && !d.file_url.startsWith('http')) {
+              try {
+                const { signedUrl } = await storageService.getSignedUrl(
+                  storageService.BUCKET_STARTUP_DOCS,
+                  d.file_url,
+                  86400
+                );
+                if (signedUrl) downloadUrl = signedUrl;
+              } catch {}
+            }
+            return {
+              ...d,
+              downloadUrl
+            };
+          })
+        );
+      }
+    } catch (e) {
+      logger.warn('Failed to fetch application_documents', e);
+    }
+
+    return ApiResponse.success(
+      res,
+      {
+        application: {
+          ...application,
+          details,
+          documents,
+          expert_assignments: expertAssignments
+        }
+      },
+      'Application details retrieved'
+    );
   } catch (error) {
     logger.error('Error in getApplicationById controller', error);
     return ApiResponse.error(res, 'Failed to retrieve application', 500, 'SERVER_ERROR');
@@ -152,20 +322,25 @@ export const getApplicationById = async (req, res) => {
  * POST /api/applications
  */
 export const submitApplication = async (req, res) => {
+  let createdAppId = null;
   try {
     const userId = req.user.id;
     const {
       challenge_id,
       proposal,
       technical_solution,
-      technical_approach,
-      expected_impact,
       estimated_cost,
-      estimated_cost_numeric
+      details = {},
+      documents = []
     } = req.body;
 
-    if (!challenge_id || !proposal) {
-      return ApiResponse.error(res, 'Challenge ID and proposal summary are required', 422, 'VALIDATION_ERROR');
+    if (!challenge_id) {
+      return ApiResponse.error(res, 'Challenge ID is required', 422, 'VALIDATION_ERROR');
+    }
+
+    const proposalSummary = proposal || details?.proposal || '';
+    if (!proposalSummary || !proposalSummary.trim()) {
+      return ApiResponse.error(res, 'Executive summary / proposal is required', 422, 'VALIDATION_ERROR');
     }
 
     // 1. Verify startup ownership
@@ -230,43 +405,107 @@ export const submitApplication = async (req, res) => {
       .maybeSingle();
 
     if (existingApp) {
-      return ApiResponse.error(res, 'Your startup has already submitted a proposal for this challenge', 409, 'ALREADY_APPLIED');
+      return ApiResponse.error(res, 'You have already submitted an application for this challenge.', 409, 'ALREADY_APPLIED');
     }
 
-    // Compose technical solution and cost details
-    const fullTechSolution = technical_solution || [
-      proposal,
-      technical_approach ? `\n\nApproach: ${technical_approach}` : '',
-      expected_impact ? `\n\nImpact: ${expected_impact}` : ''
-    ].join('');
+    // Format estimated cost as numeric
+    const rawCost = estimated_cost !== undefined ? estimated_cost : details?.estimated_cost;
+    const numericCost = Number(String(rawCost || '0').replace(/[^0-9.-]+/g, '')) || 0;
 
-    const costStr = estimated_cost ? String(estimated_cost) : estimated_cost_numeric ? `₹${estimated_cost_numeric}` : 'To be determined';
+    const fullTechSolution = (technical_solution || details?.technical_solution || details?.technology_used || proposalSummary).trim();
 
-    // 4. Create application
+    // 4. Insert into applications table
     const { data: newApp, error: appError } = await supabaseAdmin
       .from('applications')
       .insert([
         {
           challenge_id,
           startup_id: startup.id,
-          proposal: proposal.trim(),
-          technical_solution: fullTechSolution.trim(),
-          estimated_cost: costStr,
+          proposal: proposalSummary.trim(),
+          technical_solution: fullTechSolution,
+          estimated_cost: numericCost,
           dpiit_verified: Boolean(startup.verified),
           status: 'under_review',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
       ])
-      .select('*, challenges(title, department_id), startups(name)')
+      .select('*, challenges(id, title, department_id, government_departments(name)), startups(id, name, dpiit_number, sector, verified)')
       .single();
 
-    if (appError) {
+    if (appError || !newApp) {
       logger.error('Error inserting application', appError);
       return ApiResponse.error(res, 'Failed to submit application', 500, 'SERVER_ERROR');
     }
 
-    // 5. Audit Log
+    createdAppId = newApp.id;
+
+    // 5. Insert into application_details table
+    let savedDetails = null;
+    try {
+      const detailsRow = {
+        application_id: newApp.id,
+        solution_title: (details.solution_title || details.solutionTitle || newApp.challenges?.title || 'Proposed Innovation Solution').trim(),
+        problem_understanding: (details.problem_understanding || details.problemUnderstanding || '').trim(),
+        technology_used: (details.technology_used || details.technologyUsed || details.proposedTechnology || '').trim(),
+        innovation_usp: (details.innovation_usp || details.innovationUsp || '').trim(),
+        expected_outcome: (details.expected_outcome || details.expectedOutcome || details.expectedImpact || '').trim(),
+        implementation_plan: (details.implementation_plan || details.implementationPlan || '').trim(),
+        implementation_timeline: (details.implementation_timeline || details.implementationTimeline || '').trim(),
+        infrastructure_requirements: (details.infrastructure_requirements || details.infrastructureRequirements || '').trim(),
+        team_resources: (details.team_resources || details.teamResources || (Array.isArray(details.team) ? JSON.stringify(details.team) : '')).trim(),
+        cost_breakdown: (details.cost_breakdown || details.costBreakdown || (Array.isArray(details.costProposal) ? JSON.stringify(details.costProposal) : '')).trim(),
+        maintenance_cost: Number(details.maintenance_cost || details.maintenanceCost || 0) || 0,
+        pilot_duration_days: parseInt(details.pilot_duration_days || details.pilotDurationDays || 180, 10) || 180,
+        kpis: (details.kpis || '').trim(),
+        previous_experience: (details.previous_experience || details.previousExperience || details.experience || '').trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: detData, error: detErr } = await supabaseAdmin
+        .from('application_details')
+        .insert([detailsRow])
+        .select()
+        .single();
+
+      if (detErr) {
+        logger.warn('Warning inserting application_details', detErr);
+      } else {
+        savedDetails = detData;
+      }
+    } catch (detException) {
+      logger.warn('Exception during application_details insertion', detException);
+    }
+
+    // 6. Insert into application_documents table if documents provided
+    let savedDocuments = [];
+    if (Array.isArray(documents) && documents.length > 0) {
+      try {
+        const docRows = documents.map((doc) => ({
+          application_id: newApp.id,
+          file_name: doc.file_name || doc.name || 'document.pdf',
+          file_url: doc.file_url || doc.url || '',
+          document_type: doc.document_type || doc.type || 'Technical Proposal',
+          created_at: new Date().toISOString()
+        }));
+
+        const { data: docData, error: docErr } = await supabaseAdmin
+          .from('application_documents')
+          .insert(docRows)
+          .select();
+
+        if (docErr) {
+          logger.warn('Warning inserting application_documents', docErr);
+        } else {
+          savedDocuments = docData || [];
+        }
+      } catch (docException) {
+        logger.warn('Exception during application_documents insertion', docException);
+      }
+    }
+
+    // 7. Audit Log
     await logAudit({
       userId,
       action: AuditActions.APPLICATION_SUBMITTED,
@@ -275,7 +514,7 @@ export const submitApplication = async (req, res) => {
       description: `Startup '${startup.name}' submitted proposal for '${challenge.title}'`
     });
 
-    // 6. Notify Government Officers
+    // 8. Notify Government Officers
     await createNotification({
       role: 'government',
       title: 'New Application Received',
@@ -283,10 +522,31 @@ export const submitApplication = async (req, res) => {
       type: 'info'
     });
 
-    return ApiResponse.success(res, { application: newApp }, 'Application submitted successfully', 201);
+    return ApiResponse.success(
+      res,
+      {
+        application: {
+          ...newApp,
+          details: savedDetails,
+          documents: savedDocuments
+        }
+      },
+      'Application submitted successfully',
+      201
+    );
   } catch (error) {
     logger.error('Error in submitApplication controller', error);
-    return ApiResponse.error(res, 'Failed to submit application', 500, 'SERVER_ERROR');
+
+    // Rollback if application row was created but uncaught error occurred
+    if (createdAppId) {
+      try {
+        await supabaseAdmin.from('applications').delete().eq('id', createdAppId);
+      } catch (cleanupErr) {
+        logger.error('Error rolling back application creation', cleanupErr);
+      }
+    }
+
+    return ApiResponse.error(res, 'Failed to submit application. Please try again.', 500, 'SERVER_ERROR');
   }
 };
 
@@ -354,6 +614,7 @@ export const updateApplicationStatus = async (req, res) => {
 };
 
 export default {
+  uploadApplicationDocument,
   listApplications,
   getApplicationsByChallenge,
   getApplicationById,

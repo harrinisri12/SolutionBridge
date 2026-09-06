@@ -101,7 +101,7 @@ const StartupOverview = () => {
           subtitle="DPIIT Verified"
           icon={FileCheck2}
           color="blue"
-          onClick={() => navigate('/startup/challenges')}
+          onClick={() => navigate('/startup/applications')}
         />
         <StatCard
           title="Under Evaluation"
@@ -109,7 +109,7 @@ const StartupOverview = () => {
           subtitle="Expert Panel Review"
           icon={Clock}
           color="amber"
-          onClick={() => navigate('/startup/payments')}
+          onClick={() => navigate('/startup/applications')}
         />
         <StatCard
           title="Selected Proposals"
@@ -117,7 +117,7 @@ const StartupOverview = () => {
           subtitle="Cleared for Pilot"
           icon={CheckCircle2}
           color="emerald"
-          onClick={() => navigate('/startup/payments')}
+          onClick={() => navigate('/startup/applications')}
         />
         <StatCard
           title="Active Pilots"
@@ -208,9 +208,9 @@ const StartupOverview = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(app.status === 'selected' || app.status === 'Selected' ? '/startup/pilot' : '/startup/payments')}
+                        onClick={() => navigate(`/startup/applications/${app.id}`)}
                       >
-                        {app.status === 'selected' || app.status === 'Selected' ? 'Open Pilot' : 'View Status'}
+                        View Details
                       </Button>
                     </td>
                   </tr>

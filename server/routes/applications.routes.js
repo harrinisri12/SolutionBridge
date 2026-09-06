@@ -1,10 +1,12 @@
 import { Router } from 'express';
+import multer from 'multer';
 import {
   listApplications,
   getApplicationsByChallenge,
   getApplicationById,
   submitApplication,
-  updateApplicationStatus
+  updateApplicationStatus,
+  uploadApplicationDocument
 } from '../controllers/applicationsController.js';
 import {
   assignExpertToApplication,
@@ -19,12 +21,16 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
+const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25 MB max
 
 router.use(requireAuth);
 
 // Applications listing (role-scoped)
 router.get('/', asyncHandler(listApplications));
 router.get('/:id', asyncHandler(getApplicationById));
+
+// Startup supporting document upload
+router.post('/upload-document', requireRole('startup'), upload.single('file'), asyncHandler(uploadApplicationDocument));
 
 // Startup submit proposal
 router.post('/', requireRole('startup'), asyncHandler(submitApplication));

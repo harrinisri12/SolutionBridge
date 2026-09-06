@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Target,
@@ -11,13 +12,13 @@ import {
   Eye,
   FileCheck2,
   DollarSign,
-  UploadCloud,
   FileText,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
-import Modal from '../../components/Common/Modal';
 import EmptyState from '../../components/Common/EmptyState';
 import GovChallengeDetail from '../Government/GovChallengeDetail';
 
@@ -33,72 +34,21 @@ const CATEGORY_CHIPS = [
 ];
 
 const StartupChallenges = () => {
-  const { challenges, DEPARTMENTS, applications, submitApplication, currentUser } = useApp();
+  const { challenges, departments, applications, currentUser } = useApp();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryChip, setSelectedCategoryChip] = useState('All');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('All');
-
-  // Modal States
   const [viewChallenge, setViewChallenge] = useState(null);
-  const [applyChallenge, setApplyChallenge] = useState(null);
-
-  const startupDefaultName = currentUser?.organization || currentUser?.user?.organization || currentUser?.user?.full_name || 'My Startup';
-
-  // Application Form State
-  const [appForm, setAppForm] = useState({
-    startupName: startupDefaultName,
-    solutionDescription: '',
-    technicalApproach: '',
-    expectedImpact: '',
-    estimatedCost: '₹ 50,00,000',
-    documents: [
-      { name: 'Technical_Proposal_Deck.pdf', size: '3.8 MB' },
-      { name: 'DPIIT_Registration_Certificate.pdf', size: '1.2 MB' }
-    ]
-  });
-
-  const handleApplySubmit = (e) => {
-    e.preventDefault();
-    if (!appForm.solutionDescription || !appForm.technicalApproach) {
-      alert('Please fill out the Solution Description and Technical Approach.');
-      return;
-    }
-
-    submitApplication({
-      challengeId: applyChallenge.id,
-      challengeTitle: applyChallenge.title,
-      department: applyChallenge.department,
-      category: applyChallenge.category,
-      startupName: appForm.startupName,
-      proposedSolution: appForm.solutionDescription,
-      technicalApproach: appForm.technicalApproach,
-      expectedImpact: appForm.expectedImpact,
-      estimatedCost: appForm.estimatedCost,
-      documents: appForm.documents
-    });
-
-    setApplyChallenge(null);
-    setViewChallenge(null);
-    setAppForm({
-      startupName: startupDefaultName,
-      solutionDescription: '',
-      technicalApproach: '',
-      expectedImpact: '',
-      estimatedCost: '₹ 50,00,000',
-      documents: [
-        { name: 'Technical_Proposal_Deck.pdf', size: '3.8 MB' },
-        { name: 'DPIIT_Registration_Certificate.pdf', size: '1.2 MB' }
-      ]
-    });
-  };
 
   // Filtered Challenges
-  const filteredChallenges = challenges.filter((ch) => {
+  const filteredChallenges = (challenges || []).filter((ch) => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
-      ch.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ch.problemDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ch.department.toLowerCase().includes(searchTerm.toLowerCase());
+      (ch.title && ch.title.toLowerCase().includes(term)) ||
+      (ch.problemDescription && ch.problemDescription.toLowerCase().includes(term)) ||
+      (ch.department && ch.department.toLowerCase().includes(term));
     const matchesCategory =
       selectedCategoryChip === 'All' || ch.category === selectedCategoryChip;
     const matchesDept =
@@ -116,18 +66,22 @@ const StartupChallenges = () => {
     );
   }
 
-  // Check if startup already applied
-  const getApplicationStatus = (challengeId) => {
-    const existing = applications.find(
-      (a) =>
-        a.challengeId === challengeId &&
-        (a.startupName === currentUser.startupName || a.startupId === currentUser.startupId)
+  // Check if startup already applied to this challenge
+  const getAppliedApplication = (challengeId) => {
+    return (applications || []).find(
+      (a) => String(a.challengeId || a.challenge_id) === String(challengeId)
     );
-    return existing ? existing.status : null;
   };
 
+  const deptList = Array.from(
+    new Set([
+      ...(departments || []).map((d) => d.name || d),
+      ...(challenges || []).map((c) => c.department).filter(Boolean)
+    ])
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-left">
       {/* Top Banner */}
       <div className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div>
@@ -142,20 +96,31 @@ const StartupChallenges = () => {
             Discover verified public sector problems with sanctioned pilot funding and scale-up procurement potential.
           </p>
         </div>
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/startup/applications')}
+          >
+            My Submitted Applications ({applications?.length || 0})
+          </Button>
+        </div>
       </div>
 
-      {/* Category Chips Bar */}
+      {/* Filter Toolbar */}
       <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-3">
+        {/* Category Filter Chips */}
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-            Filter by Sector Category:
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+            Filter by Sector
           </span>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORY_CHIPS.map((chip) => (
               <button
                 key={chip}
+                type="button"
                 onClick={() => setSelectedCategoryChip(chip)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   selectedCategoryChip === chip
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -189,7 +154,7 @@ const StartupChallenges = () => {
               className="w-full py-1.5 px-2.5 text-xs border border-slate-300 rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="All">All Departments</option>
-              {DEPARTMENTS.map((dept) => (
+              {deptList.map((dept) => (
                 <option key={dept} value={dept}>
                   {dept}
                 </option>
@@ -202,8 +167,8 @@ const StartupChallenges = () => {
       {/* Challenge Cards Grid */}
       {filteredChallenges.length === 0 ? (
         <EmptyState
-          title="No challenges found in this category"
-          description="Try selecting 'All' or adjust your keyword search."
+          title="No challenges found"
+          description="Try adjusting your category filter or search keyword."
           actionLabel="View All Challenges"
           onAction={() => {
             setSelectedCategoryChip('All');
@@ -214,7 +179,7 @@ const StartupChallenges = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredChallenges.map((ch) => {
-            const appStatus = getApplicationStatus(ch.id);
+            const appliedApp = getAppliedApplication(ch.id);
 
             return (
               <div
@@ -226,10 +191,13 @@ const StartupChallenges = () => {
                     <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                       {ch.category}
                     </span>
-                    {appStatus ? (
-                      <Badge status={appStatus} size="sm" />
+                    {appliedApp ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Applied</span>
+                      </span>
                     ) : (
-                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                         Open for Applications
                       </span>
                     )}
@@ -244,7 +212,7 @@ const StartupChallenges = () => {
                   </p>
 
                   <p className="text-xs text-slate-600 line-clamp-3 mt-2.5 leading-relaxed">
-                    {ch.problemDescription}
+                    {ch.problemDescription || ch.problemStatement}
                   </p>
 
                   {/* Eligibility Snippet */}
@@ -266,155 +234,44 @@ const StartupChallenges = () => {
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full font-semibold text-xs"
-                    icon={Eye}
-                    onClick={() => setViewChallenge(ch)}
-                  >
-                    View Challenge
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full font-semibold text-xs justify-center"
+                      icon={Eye}
+                      onClick={() => setViewChallenge(ch)}
+                    >
+                      View Details
+                    </Button>
+
+                    {appliedApp ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full font-semibold text-xs justify-center bg-slate-900 hover:bg-slate-800 text-white"
+                        onClick={() => navigate(`/startup/applications/${appliedApp.id}`)}
+                      >
+                        My Proposal
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full font-semibold text-xs justify-center bg-blue-600 hover:bg-blue-700 text-white"
+                        icon={ArrowRight}
+                        iconPosition="right"
+                        onClick={() => navigate(`/startup/challenges/${ch.id}/apply`)}
+                      >
+                        Apply Now
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-      )}
-
-      {/* APPLICATION FORM MODAL */}
-      {applyChallenge && (
-        <Modal
-          isOpen={!!applyChallenge}
-          onClose={() => setApplyChallenge(null)}
-          title={`Submit Innovation Proposal`}
-          subtitle={`Applying for: ${applyChallenge.title}`}
-          maxWidth="max-w-3xl"
-          footer={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setApplyChallenge(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleApplySubmit}
-              >
-                Submit Application
-              </Button>
-            </>
-          }
-        >
-          <form onSubmit={handleApplySubmit} className="space-y-4 text-xs">
-            {/* Startup Details */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-                Applicant Startup Details (DPIIT Verified)
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-slate-700">
-                <div>
-                  <strong>Startup Name:</strong> {appForm.startupName}
-                </div>
-                <div>
-                  <strong>Target Department:</strong> {applyChallenge.department}
-                </div>
-              </div>
-            </div>
-
-            {/* Solution Description */}
-            <div>
-              <label className="block font-bold text-slate-700 uppercase mb-1">
-                Proposed Solution Description *
-              </label>
-              <textarea
-                rows={3}
-                value={appForm.solutionDescription}
-                onChange={(e) =>
-                  setAppForm((prev) => ({ ...prev, solutionDescription: e.target.value }))
-                }
-                placeholder="Describe your proprietary technology, core mechanism, and how it directly solves the challenge..."
-                className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Technical Approach */}
-            <div>
-              <label className="block font-bold text-slate-700 uppercase mb-1">
-                Technical Approach & Architecture *
-              </label>
-              <textarea
-                rows={3}
-                value={appForm.technicalApproach}
-                onChange={(e) =>
-                  setAppForm((prev) => ({ ...prev, technicalApproach: e.target.value }))
-                }
-                placeholder="Detail the hardware sensors, edge inference, network telemetry, and cloud dashboard architecture..."
-                className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Expected Impact & Estimated Cost */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">
-                  Expected Measurable Impact
-                </label>
-                <textarea
-                  rows={2}
-                  value={appForm.expectedImpact}
-                  onChange={(e) =>
-                    setAppForm((prev) => ({ ...prev, expectedImpact: e.target.value }))
-                  }
-                  placeholder="e.g., 90% reduction in manual sampling, early warning <10 min..."
-                  className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">
-                  Estimated Total Cost (₹)
-                </label>
-                <input
-                  type="text"
-                  value={appForm.estimatedCost}
-                  onChange={(e) =>
-                    setAppForm((prev) => ({ ...prev, estimatedCost: e.target.value }))
-                  }
-                  className="w-full border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Sanctioned challenge budget: {applyChallenge.budget}
-                </span>
-              </div>
-            </div>
-
-            {/* Supporting Documents Upload Mock */}
-            <div>
-              <label className="block font-bold text-slate-700 uppercase mb-1">
-                Supporting Documents (Pitch Deck, DPR, Certifications)
-              </label>
-              <div className="p-3 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
-                {appForm.documents.map((doc, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between bg-white p-2 rounded border border-slate-200"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-semibold text-slate-800">{doc.name}</span>
-                      <span className="text-slate-400 text-[10px]">({doc.size})</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
-                      Attached
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </form>
-        </Modal>
       )}
     </div>
   );

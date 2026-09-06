@@ -3,10 +3,11 @@ import { logger } from '../utils/logger.js';
 
 export const BUCKET_EVIDENCE = process.env.STORAGE_BUCKET_EVIDENCE || 'pilot-evidence';
 export const BUCKET_PROCUREMENT = process.env.STORAGE_BUCKET_PROCUREMENT || 'procurement-documents';
+export const BUCKET_STARTUP_DOCS = process.env.STORAGE_BUCKET_STARTUP_DOCS || 'startup-documents';
 
 /**
  * Upload file to Supabase Storage Bucket
- * @param {string} bucket - 'pilot-evidence' or 'procurement-documents'
+ * @param {string} bucket - 'pilot-evidence' | 'procurement-documents' | 'startup-documents'
  * @param {string} filePath - Storage destination path (e.g. pilot_id/filename)
  * @param {Buffer} fileBuffer - Binary file content
  * @param {string} contentType - MIME type (e.g. 'application/pdf')
@@ -60,7 +61,8 @@ export const storageService = {
   uploadFile,
   getSignedUrl,
   BUCKET_EVIDENCE,
-  BUCKET_PROCUREMENT
+  BUCKET_PROCUREMENT,
+  BUCKET_STARTUP_DOCS
 };
 
 export default storageService;

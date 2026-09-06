@@ -25,6 +25,13 @@ export const applicationService = {
   },
 
   /**
+   * Upload supporting document for startup application (Supabase Storage)
+   */
+  async uploadDocument(formData) {
+    return api.post('/applications/upload-document', formData);
+  },
+
+  /**
    * Submit new solution proposal (Startup)
    */
   async submitApplication(applicationData) {

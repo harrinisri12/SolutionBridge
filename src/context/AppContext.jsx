@@ -53,42 +53,79 @@ export const normalizeChallenge = (c) => {
 export const normalizeApplication = (a) => {
   if (!a) return null;
   const ev = a.evaluations?.[0];
+  const asg = a.expert_assignments?.[0];
+  const det = a.details || {};
+  const costVal = a.estimated_cost !== undefined && a.estimated_cost !== null
+    ? (typeof a.estimated_cost === 'number' ? `₹ ${Number(a.estimated_cost).toLocaleString('en-IN')}` : String(a.estimated_cost).startsWith('₹') ? a.estimated_cost : `₹ ${Number(String(a.estimated_cost).replace(/[^0-9.-]+/g, '') || 0).toLocaleString('en-IN')}`)
+    : 'To be determined';
+
+  let evaluationStatus = 'Evaluation Pending';
+  if (a.status === 'selected') {
+    evaluationStatus = 'Selected for Pilot';
+  } else if (a.status === 'shortlisted') {
+    evaluationStatus = 'Shortlisted';
+  } else if (a.status === 'rejected') {
+    evaluationStatus = 'Rejected';
+  } else if (ev && Number(ev.weighted_score) > 0) {
+    evaluationStatus = 'Evaluation Completed';
+  } else if (asg) {
+    evaluationStatus = 'Expert Assigned';
+  }
+
   return {
     ...a,
     id: a.id,
-    challengeId: a.challenge_id,
-    challengeTitle: a.challenges?.title || 'Challenge Proposal',
-    startupId: a.startup_id,
-    startupName: a.startups?.name || 'Startup',
-    department: a.challenges?.government_departments?.name || 'Government Department',
-    category: a.challenges?.category || 'General',
-    proposalText: a.proposal || '',
+    challengeId: a.challenge_id || a.challengeId,
+    challengeTitle: a.challenges?.title || a.challengeTitle || 'Challenge Proposal',
+    startupId: a.startup_id || a.startupId,
+    startupName: a.startups?.name || a.startupName || 'Startup',
+    department: a.challenges?.government_departments?.name || a.department || 'Government Department',
+    category: a.challenges?.category || a.category || 'General',
+    proposalText: a.proposal || det.proposal || '',
     proposedSolution: a.proposal || '',
     solutionOverview: a.proposal || '',
     technicalSolution: a.technical_solution || a.proposal || '',
-    estimatedCost: a.estimated_cost || 'To be determined',
-    status: a.status === 'under_review' ? 'Submitted' : a.status === 'shortlisted' ? 'Shortlisted' : a.status === 'selected' ? 'Selected' : a.status === 'rejected' ? 'Rejected' : a.status,
-    rawStatus: a.status,
-    eligibility: a.dpiit_verified ? 'Verified (DPIIT)' : 'Under Review',
-    submittedDate: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : '',
-    scores: ev ? {
+    estimatedCost: costVal,
+    rawEstimatedCost: Number(typeof a.estimated_cost === 'number' ? a.estimated_cost : String(a.estimated_cost || '0').replace(/[^0-9.-]+/g, '') || 0),
+    status: a.status === 'under_review' ? 'under_review' : a.status === 'shortlisted' ? 'shortlisted' : a.status === 'selected' ? 'selected' : a.status === 'rejected' ? 'rejected' : a.status || 'under_review',
+    rawStatus: a.status || 'under_review',
+    statusDisplay: a.status === 'under_review' ? 'Under Review' : a.status === 'shortlisted' ? 'Shortlisted' : a.status === 'selected' ? 'Selected for Pilot' : a.status === 'rejected' ? 'Rejected' : a.status || 'Under Review',
+    evaluationStatus,
+    eligibility: a.dpiit_verified ? 'Verified (DPIIT)' : 'Verification Pending',
+    dpiitVerified: Boolean(a.dpiit_verified),
+    submittedDate: a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : 'Recent',
+    updatedDate: a.updated_at ? new Date(a.updated_at).toISOString().split('T')[0] : 'Recent',
+    // Details Fields
+    solutionTitle: det.solution_title || a.solution_title || a.challenges?.title || 'Proposed Innovation Solution',
+    problemUnderstanding: det.problem_understanding || a.problem_understanding || '',
+    technologyUsed: det.technology_used || a.technology_used || '',
+    innovationUsp: det.innovation_usp || a.innovation_usp || '',
+    expectedOutcome: det.expected_outcome || a.expected_outcome || '',
+    implementationPlan: det.implementation_plan || a.implementation_plan || '',
+    implementationTimeline: det.implementation_timeline || a.implementation_timeline || '',
+    infrastructureRequirements: det.infrastructure_requirements || a.infrastructure_requirements || '',
+    teamResources: det.team_resources || a.team_resources || '',
+    costBreakdown: det.cost_breakdown || a.cost_breakdown || '',
+    maintenanceCost: Number(det.maintenance_cost || a.maintenance_cost || 0),
+    pilotDurationDays: parseInt(det.pilot_duration_days || a.pilot_duration_days || 180, 10),
+    kpis: det.kpis || a.kpis || '',
+    previousExperience: det.previous_experience || a.previous_experience || '',
+    documents: a.documents || a.application_documents || [],
+    details: a.details || null,
+    scores: ev && Number(ev.weighted_score) > 0 ? {
       technicalFeasibility: Number(ev.technical_feasibility) || 0,
       innovation: Number(ev.innovation_ip) || 0,
       costEffectiveness: Number(ev.cost_effectiveness) || 0,
       scalability: Number(ev.scalability) || 0,
       risk: Number(ev.implementation_risk) || 0,
       overallScore: Number(ev.weighted_score) || 0
-    } : {
-      technicalFeasibility: 0,
-      innovation: 0,
-      costEffectiveness: 0,
-      scalability: 0,
-      risk: 0,
-      overallScore: 0
-    },
+    } : null,
     expertRecommendation: ev?.recommendation || '',
+    evaluationComments: ev?.comments || '',
     evaluatedBy: ev?.experts?.profiles?.full_name || '',
     evaluationDate: ev?.created_at ? new Date(ev.created_at).toISOString().split('T')[0] : '',
+    expertAssigned: Boolean(asg),
+    assignedExpertName: asg?.experts?.profiles?.full_name || '',
     startups: a.startups || null
   };
 };
@@ -584,21 +621,36 @@ export const AppProvider = ({ children }) => {
   const submitApplication = async (appData) => {
     try {
       const response = await applicationService.submitApplication({
-        challenge_id: appData.challengeId || appData.challenge_id,
-        proposal: appData.proposalText || appData.proposedSolution || appData.solutionOverview || appData.solutionDescription,
-        technical_solution: appData.technicalSolution || appData.technicalApproach,
-        technical_approach: appData.technicalApproach,
-        expected_impact: appData.expectedImpact,
-        estimated_cost: appData.estimatedCost
+        challenge_id: appData.challenge_id || appData.challengeId,
+        proposal: appData.proposal || appData.proposalText || appData.proposedSolution || appData.solutionOverview || appData.solutionDescription,
+        technical_solution: appData.technical_solution || appData.technicalSolution || appData.technicalApproach,
+        estimated_cost: appData.estimated_cost !== undefined ? appData.estimated_cost : appData.estimatedCost,
+        details: appData.details || {
+          solution_title: appData.solution_title || appData.solutionTitle,
+          problem_understanding: appData.problem_understanding || appData.problemUnderstanding,
+          technology_used: appData.technology_used || appData.technologyUsed,
+          innovation_usp: appData.innovation_usp || appData.innovationUsp,
+          expected_outcome: appData.expected_outcome || appData.expectedOutcome,
+          implementation_plan: appData.implementation_plan || appData.implementationPlan,
+          implementation_timeline: appData.implementation_timeline || appData.implementationTimeline,
+          infrastructure_requirements: appData.infrastructure_requirements || appData.infrastructureRequirements,
+          team_resources: appData.team_resources || appData.teamResources,
+          cost_breakdown: appData.cost_breakdown || appData.costBreakdown,
+          maintenance_cost: appData.maintenance_cost !== undefined ? appData.maintenance_cost : appData.maintenanceCost,
+          pilot_duration_days: appData.pilot_duration_days !== undefined ? appData.pilot_duration_days : appData.pilotDurationDays,
+          kpis: appData.kpis,
+          previous_experience: appData.previous_experience || appData.previousExperience
+        },
+        documents: appData.documents || []
       });
 
       const newApp = response?.data?.application ? normalizeApplication(response.data.application) : null;
       if (newApp) {
-        setApplications(prev => [newApp, ...prev]);
+        setApplications(prev => [newApp, ...prev.filter(a => a.id !== newApp.id)]);
       }
 
       addToast("Application submitted successfully!", "success");
-      refreshData();
+      await refreshData();
       return newApp;
     } catch (err) {
       addToast(err.message || "Failed to submit application", "error");

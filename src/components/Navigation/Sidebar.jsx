@@ -51,6 +51,7 @@ const Sidebar = () => {
         return [
           { name: 'OVERVIEW', path: '/startup/overview', icon: LayoutDashboard },
           { name: 'CHALLENGES', path: '/startup/challenges', icon: Flag, count: challenges?.length },
+          { name: 'APPLICATIONS & EVALUATION', path: '/startup/applications', icon: FileCheck2, count: applications?.length },
           { name: 'MY PILOT', path: '/startup/pilot', icon: Zap, count: pilots?.length },
           { name: 'PAYMENTS & STATUS', path: '/startup/payments', icon: CreditCard }
         ];

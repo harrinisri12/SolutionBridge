@@ -119,6 +119,14 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
   const challengeApps = applications.filter(
     (a) => String(a.challengeId) === String(challenge.id) || String(a.challenge_id) === String(challenge.id)
   );
+
+  const myAppliedApp = currentRole === 'Startup'
+    ? applications.find(
+        (a) =>
+          String(a.challengeId || a.challenge_id) === String(challenge.id) ||
+          (a.startupId && currentUser?.startupId && a.startupId === currentUser?.startupId)
+      )
+    : null;
   const totalAppsCount = challenge.applicationsCount !== undefined ? challenge.applicationsCount : challengeApps.length;
   const compliantAppsCount = challengeApps.filter((a) => a.status !== 'Rejected' && a.status !== 'rejected').length || (totalAppsCount > 0 ? totalAppsCount : 0);
   const underEvalCount = challengeApps.filter(
@@ -338,7 +346,35 @@ const GovChallengeDetail = ({ challenge: propChallenge, onBack }) => {
                   Edit Statement
                 </Button>
               )}
-              {currentRole !== 'Startup' && (
+              {currentRole === 'Startup' ? (
+                myAppliedApp ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Application Submitted</span>
+                    </span>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => navigate(`/startup/applications/${myAppliedApp.id}`)}
+                      className="bg-[#0f2942] hover:bg-[#001428] text-white"
+                    >
+                      View Application
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => navigate(`/startup/challenges/${challenge.id}/apply`)}
+                    icon={ArrowRight}
+                    iconPosition="right"
+                    className="bg-[#045eb2] hover:bg-[#034a8f] text-white font-bold px-5"
+                  >
+                    Apply Now
+                  </Button>
+                )
+              ) : (
                 <Button
                   variant="primary"
                   size="md"

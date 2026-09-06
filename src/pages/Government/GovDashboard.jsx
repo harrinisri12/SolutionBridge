@@ -62,7 +62,7 @@ const GovDashboard = () => {
           <p className="text-xs text-slate-400 mt-1">Manage innovation procurement lifecycles, eligibility verification, and pilot tracking.</p>
         </div>
         <button
-          onClick={() => navigate('/gov/create-challenge')}
+          onClick={() => navigate('/gov/challenges', { state: { openCreateModal: true } })}
           className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 font-semibold text-xs uppercase tracking-wider text-white rounded-xl shadow-md transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />

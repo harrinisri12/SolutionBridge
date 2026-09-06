@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Plus,
@@ -24,6 +25,8 @@ import GovChallengeDetail from './GovChallengeDetail';
 
 const GovChallenges = () => {
   const { challenges, DEPARTMENTS, CATEGORIES, publishChallenge } = useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState('grid'); // grid, table
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +37,15 @@ const GovChallenges = () => {
   // Modal & View States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
+
+  // Auto-open modal if navigated from overview with openCreateModal flag
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setIsCreateOpen(true);
+      // Clean up the location state so it doesn't reopen unexpectedly
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -126,7 +138,7 @@ const GovChallenges = () => {
           icon={Plus}
           onClick={() => setIsCreateOpen(true)}
         >
-          + Create Challenge
+          Create Challenge
         </Button>
       </div>
 

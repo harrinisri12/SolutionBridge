@@ -119,7 +119,7 @@ const GovOverview = () => {
             variant="secondary"
             size="sm"
             icon={Plus}
-            onClick={() => navigate('/gov/challenges')}
+            onClick={() => navigate('/gov/challenges', { state: { openCreateModal: true } })}
           >
             Create Challenge
           </Button>

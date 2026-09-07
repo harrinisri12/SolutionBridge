@@ -381,21 +381,21 @@ const ExpertValidation = () => {
                           View
                         </Button>
                         <button
-                          onClick={() => verifyEvidence(currentPilot.id, m.id, ev.name, 'Verified')}
+                          onClick={() => verifyEvidence(ev.id, 'Verified')}
                           className="px-2 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
                           title="Verify"
                         >
                           ✓ Verify
                         </button>
                         <button
-                          onClick={() => verifyEvidence(currentPilot.id, m.id, ev.name, 'Needs Clarification')}
+                          onClick={() => verifyEvidence(ev.id, 'Needs Clarification')}
                           className="px-2 py-1 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
                           title="Request Clarification"
                         >
                           💬 Clarify
                         </button>
                         <button
-                          onClick={() => verifyEvidence(currentPilot.id, m.id, ev.name, 'Rejected')}
+                          onClick={() => verifyEvidence(ev.id, 'Rejected')}
                           className="px-2 py-1 rounded text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
                           title="Reject"
                         >

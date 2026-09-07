@@ -25,6 +25,13 @@ export const pilotService = {
   },
 
   /**
+   * Get pilot by Application ID
+   */
+  async getPilotByApplication(applicationId) {
+    return api.get(`/pilots/application/${applicationId}`);
+  },
+
+  /**
    * Create new sandbox pilot from selected application (Government)
    */
   async createPilot(pilotData) {
@@ -34,8 +41,8 @@ export const pilotService = {
   /**
    * Update pilot status (Government)
    */
-  async updateStatus(id, status) {
-    return api.patch(`/pilots/${id}/status`, { status });
+  async updateStatus(id, status, extraData = {}) {
+    return api.patch(`/pilots/${id}/status`, { status, ...extraData });
   },
 
   /**

@@ -161,6 +161,14 @@ export const normalizePilot = (p) => {
     }))
   }));
 
+  const statusMap = {
+    'not_started': 'Not Started',
+    'approved': 'Approved',
+    'in_progress': 'Ongoing',
+    'completed': 'Completed',
+    'failed': 'Failed'
+  };
+
   return {
     ...p,
     id: p.id,
@@ -172,8 +180,8 @@ export const normalizePilot = (p) => {
     location: p.location || 'Municipal Pilot Zone',
     duration: `${p.duration_days || 180} Days`,
     durationDays: p.duration_days || 180,
-    status: p.status === 'approved' ? 'Approved' : p.status === 'in_progress' ? 'Ongoing' : p.status === 'completed' ? 'Completed' : p.status === 'failed' ? 'Failed' : 'Validation',
-    rawStatus: p.status,
+    status: statusMap[p.status] || 'Not Started',
+    rawStatus: p.status || 'not_started',
     overallProgress: p.progress || 0,
     baselineValue: p.baseline_value,
     targetValue: p.target_value,
@@ -709,19 +717,31 @@ export const AppProvider = ({ children }) => {
   const createPilot = async (pilotData) => {
     try {
       const response = await pilotService.createPilot({
-        application_id: pilotData.applicationId || pilotData.application_id,
+        application_id: pilotData.application_id || pilotData.applicationId,
         location: pilotData.location,
-        duration_days: pilotData.durationDays || pilotData.duration_days,
-        baseline_value: pilotData.baselineValue || pilotData.baseline_value,
-        target_value: pilotData.targetValue || pilotData.target_value,
+        duration_days: pilotData.duration_days || pilotData.durationDays,
+        baseline_value: pilotData.baseline_value !== undefined ? pilotData.baseline_value : pilotData.baselineValue,
+        target_value: pilotData.target_value !== undefined ? pilotData.target_value : pilotData.targetValue,
         milestones: pilotData.milestones
       });
 
       addToast("Sandbox pilot created successfully!", "success");
-      refreshData();
+      await refreshData();
       return response?.data?.pilot;
     } catch (err) {
       addToast(err.message || "Failed to create pilot", "error");
+      throw err;
+    }
+  };
+
+  const updatePilotStatus = async (pilotId, status, extraData = {}) => {
+    try {
+      const response = await pilotService.updateStatus(pilotId, status, extraData);
+      addToast(`Pilot status updated to ${status}`, "success");
+      await refreshData();
+      return response?.data?.pilot;
+    } catch (err) {
+      addToast(err.message || "Failed to update pilot status", "error");
       throw err;
     }
   };
@@ -864,6 +884,7 @@ export const AppProvider = ({ children }) => {
       assignExpert,
       submitExpertEvaluation,
       createPilot,
+      updatePilotStatus,
       uploadPilotEvidence,
       verifyEvidence,
       submitPilotValidation,

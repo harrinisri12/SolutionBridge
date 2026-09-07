@@ -80,8 +80,8 @@ const RankingGrid = () => {
   const rankings = getStartupRankings();
 
   const handleLaunchPilot = (rank) => {
-    // Direct link to create pilot configuration page with pre-filled fields
-    navigate(`/gov/pilots`, { state: { prefilledApp: rank } });
+    // Direct link to applications management
+    navigate(`/gov/applications`);
   };
 
   return (

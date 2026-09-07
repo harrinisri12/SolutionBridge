@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   FileCheck2,
@@ -19,7 +20,8 @@ import {
   TrendingUp,
   BarChart3,
   UserCheck,
-  UserPlus
+  UserPlus,
+  Zap
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
@@ -27,11 +29,14 @@ import Modal from '../../components/Common/Modal';
 import EmptyState from '../../components/Common/EmptyState';
 import ChartCard from '../../components/Common/ChartCard';
 import AssignExpertModal from '../../components/Government/AssignExpertModal';
+import InitiatePilotModal from '../../components/Government/InitiatePilotModal';
 
 const GovApplications = () => {
+  const navigate = useNavigate();
   const {
     applications,
     challenges,
+    pilots,
     updateApplicationStatus
   } = useApp();
 
@@ -44,6 +49,7 @@ const GovApplications = () => {
   // Drawer / Modal States
   const [selectedApp, setSelectedApp] = useState(null);
   const [assignModalApp, setAssignModalApp] = useState(null);
+  const [initiatePilotApp, setInitiatePilotApp] = useState(null);
   const [statusUpdateComment, setStatusUpdateComment] = useState('');
 
   // Filtered Applications
@@ -230,6 +236,10 @@ const GovApplications = () => {
                     {filteredApps.map((app) => {
                       const score = app.scores?.overallScore || 0;
                       const hasExpert = Boolean(app.expertAssigned || app.assignedExpertName);
+                      const isSelected = app.status === 'selected' || app.status === 'Selected';
+                      const existingPilot = pilots.find(
+                        (p) => p.applicationId === app.id || p.application_id === app.id
+                      );
 
                       return (
                         <tr key={app.id}>
@@ -329,13 +339,51 @@ const GovApplications = () => {
 
                           {/* Status */}
                           <td>
-                            <Badge status={app.status} size="sm" />
+                            <div className="flex flex-col items-start gap-1">
+                              <Badge status={app.status} size="sm" />
+                              {existingPilot && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                  <Zap className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                  <span>Pilot: {existingPilot.status}</span>
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Action */}
                           <td className="text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              {!hasExpert && (
+                              {isSelected && !existingPilot && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={Zap}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInitiatePilotApp(app);
+                                  }}
+                                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                >
+                                  Initiate Pilot
+                                </Button>
+                              )}
+
+                              {isSelected && existingPilot && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  icon={Zap}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/gov/pilots?pilotId=${existingPilot.id}`);
+                                  }}
+                                  className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                >
+                                  View Pilot
+                                </Button>
+                              )}
+
+                              {!hasExpert && !isSelected && (
                                 <Button
                                   variant="primary"
                                   size="sm"
@@ -542,7 +590,7 @@ const GovApplications = () => {
                     >
                       View Full Dossier
                     </Button>
-                    {app.status !== 'Selected' && (
+                    {app.status !== 'Selected' && app.status !== 'selected' ? (
                       <Button
                         variant="secondary"
                         size="sm"
@@ -553,6 +601,33 @@ const GovApplications = () => {
                       >
                         Select for Pilot
                       </Button>
+                    ) : (
+                      (() => {
+                        const existingPilot = pilots.find(
+                          (p) => p.applicationId === app.id || p.application_id === app.id
+                        );
+                        return existingPilot ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={Zap}
+                            className="w-full text-xs bg-blue-50 text-blue-700 border-blue-200"
+                            onClick={() => navigate(`/gov/pilots?pilotId=${existingPilot.id}`)}
+                          >
+                            View Pilot
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={Zap}
+                            className="w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => setInitiatePilotApp(app)}
+                          >
+                            Initiate Pilot
+                          </Button>
+                        );
+                      })()
                     )}
                   </div>
                 </div>
@@ -577,6 +652,17 @@ const GovApplications = () => {
                   Current Status:
                 </span>
                 <Badge status={selectedApp.status} size="sm" />
+                {(() => {
+                  const existingPilot = pilots.find(
+                    (p) => p.applicationId === selectedApp.id || p.application_id === selectedApp.id
+                  );
+                  return existingPilot ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      <Zap className="w-3 h-3 text-blue-600" />
+                      Pilot: {existingPilot.status}
+                    </span>
+                  ) : null;
+                })()}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -586,7 +672,7 @@ const GovApplications = () => {
                 >
                   Close
                 </Button>
-                {selectedApp.status !== 'Shortlisted' && (
+                {selectedApp.status !== 'Shortlisted' && selectedApp.status !== 'selected' && selectedApp.status !== 'Selected' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -596,7 +682,7 @@ const GovApplications = () => {
                     Shortlist
                   </Button>
                 )}
-                {selectedApp.status !== 'Selected' && (
+                {selectedApp.status !== 'Selected' && selectedApp.status !== 'selected' && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -604,6 +690,34 @@ const GovApplications = () => {
                   >
                     Select for Pilot Award
                   </Button>
+                )}
+                {(selectedApp.status === 'Selected' || selectedApp.status === 'selected') && (
+                  (() => {
+                    const existingPilot = pilots.find(
+                      (p) => p.applicationId === selectedApp.id || p.application_id === selectedApp.id
+                    );
+                    return existingPilot ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={Zap}
+                        className="bg-blue-50 text-blue-700 border-blue-200"
+                        onClick={() => navigate(`/gov/pilots?pilotId=${existingPilot.id}`)}
+                      >
+                        View Pilot Console
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={Zap}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => setInitiatePilotApp(selectedApp)}
+                      >
+                        Initiate Sandbox Pilot
+                      </Button>
+                    );
+                  })()
                 )}
                 {selectedApp.status !== 'Rejected' && (
                   <Button
@@ -847,6 +961,16 @@ const GovApplications = () => {
               assignedExpertOrg: assignedInfo.expertOrg
             }));
           }
+        }}
+      />
+
+      {/* INITIATE PILOT MODAL */}
+      <InitiatePilotModal
+        isOpen={!!initiatePilotApp}
+        onClose={() => setInitiatePilotApp(null)}
+        application={initiatePilotApp}
+        onPilotCreated={() => {
+          setInitiatePilotApp(null);
         }}
       />
     </div>

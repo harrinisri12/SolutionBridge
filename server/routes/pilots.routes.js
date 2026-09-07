@@ -3,6 +3,7 @@ import multer from 'multer';
 import {
   listPilots,
   getPilotById,
+  getPilotByApplicationId,
   getPilotPerformance,
   createPilot,
   updatePilotStatus
@@ -36,6 +37,7 @@ router.use(requireAuth);
 
 // 1. Pilots Core CRUD
 router.get('/', asyncHandler(listPilots));
+router.get('/application/:applicationId', asyncHandler(getPilotByApplicationId));
 router.get('/:id', asyncHandler(getPilotById));
 router.get('/:id/performance', asyncHandler(getPilotPerformance));
 router.post('/', requireRole('government'), asyncHandler(createPilot));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -37,9 +37,23 @@ const StartupPilot = () => {
   const { pilots, uploadPilotEvidence, currentUser } = useApp();
   const navigate = useNavigate();
 
-  const myPilot = pilots[0];
-  const [selectedMilestoneForUpload, setSelectedMilestoneForUpload] = useState(myPilot?.milestones?.[0]?.id || 'm-1');
+  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || '');
+  const [selectedMilestoneForUpload, setSelectedMilestoneForUpload] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPilotId && pilots.length > 0) {
+      setSelectedPilotId(pilots[0].id);
+    }
+  }, [pilots, selectedPilotId]);
+
+  const myPilot = pilots.find((p) => p.id === selectedPilotId) || pilots[0];
+
+  useEffect(() => {
+    if (myPilot?.milestones?.[0]?.id) {
+      setSelectedMilestoneForUpload(myPilot.milestones[0].id);
+    }
+  }, [myPilot]);
 
   if (!myPilot) {
     return (
@@ -69,6 +83,37 @@ const StartupPilot = () => {
     );
   }
 
+  // Dynamic Pilot Lifecycle timeline based on actual pilot status
+  const rawStatus = myPilot.rawStatus || 'not_started';
+  const dynamicTimeline = [
+    { id: 'selected', label: 'Selected for Pilot', status: 'completed' },
+    {
+      id: 'approved',
+      label: 'Formal Approval',
+      status: rawStatus === 'not_started' ? 'active' : 'completed'
+    },
+    {
+      id: 'deployment',
+      label: 'Field Deployment',
+      status: rawStatus === 'not_started' ? 'pending' : rawStatus === 'approved' ? 'active' : 'completed'
+    },
+    {
+      id: 'testing',
+      label: 'Telemetry & Testing',
+      status: rawStatus === 'in_progress' ? 'active' : rawStatus === 'completed' ? 'completed' : 'pending'
+    },
+    {
+      id: 'validation',
+      label: 'Scientific Validation',
+      status: rawStatus === 'completed' ? 'active' : 'pending'
+    },
+    {
+      id: 'completed',
+      label: 'Direct Procurement',
+      status: myPilot.expertValidation?.validationStatus === 'Validated' ? 'completed' : 'pending'
+    }
+  ];
+
   // Performance Chart Data (Baseline vs Target vs Current Value)
   const performanceChartData = {
     labels: ['Baseline Traditional', 'Current Actual Value', 'Government Target'],
@@ -76,8 +121,8 @@ const StartupPilot = () => {
       {
         label: 'Field KPI Metric Comparison',
         data: [
-          myPilot.baselineValue || 100,
-          myPilot.actualValue || 8.5,
+          myPilot.baselineValue || 20,
+          myPilot.actualValue || (rawStatus === 'not_started' ? 0 : 8.5),
           myPilot.targetValue || 15
         ],
         backgroundColor: ['#64748b', '#059669', '#dc2626'],
@@ -210,17 +255,36 @@ const StartupPilot = () => {
 
       {/* 2. PILOT LIFECYCLE TIMELINE */}
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Pilot Project Lifecycle Timeline
-          </span>
-          <span className="text-xs font-semibold text-blue-700">
-            Current: Validation Phase (Stage 5)
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-100 gap-2">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+              Pilot Project Lifecycle Timeline
+            </span>
+            <span className="text-xs font-semibold text-blue-700">
+              Current Status: {myPilot.status} ({rawStatus.replace('_', ' ').toUpperCase()})
+            </span>
+          </div>
+
+          {pilots.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase text-slate-500">Switch Pilot:</label>
+              <select
+                value={selectedPilotId}
+                onChange={(e) => setSelectedPilotId(e.target.value)}
+                className="text-xs font-semibold py-1 px-2.5 border border-slate-300 rounded bg-white text-slate-900"
+              >
+                {pilots.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.id} - {p.challengeTitle}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between overflow-x-auto gap-2 py-2">
-          {PILOT_TIMELINE.map((step, idx) => (
+          {dynamicTimeline.map((step, idx) => (
             <React.Fragment key={step.id}>
               <div className="flex items-center gap-2 min-w-max">
                 <div
@@ -238,15 +302,15 @@ const StartupPilot = () => {
                   className={`text-xs font-semibold ${
                     step.status === 'active'
                       ? 'text-blue-900 font-bold'
-                    : step.status === 'completed'
-                    ? 'text-emerald-900'
-                    : 'text-slate-400'
+                      : step.status === 'completed'
+                      ? 'text-emerald-900'
+                      : 'text-slate-400'
                   }`}
                 >
                   {step.label}
                 </span>
               </div>
-              {idx < PILOT_TIMELINE.length - 1 && (
+              {idx < dynamicTimeline.length - 1 && (
                 <div className="w-8 h-0.5 bg-slate-200 shrink-0" />
               )}
             </React.Fragment>

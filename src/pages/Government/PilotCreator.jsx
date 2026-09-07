@@ -84,52 +84,60 @@ const PilotCreator = () => {
 
   const totalWeight = milestones.reduce((sum, m) => sum + m.weight, 0);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedChallengeId || !selectedStartupId || !startDate || !endDate) {
-      addToast("Please fill in all core fields", "warning");
-      return;
-    }
-    if (totalWeight !== 100) {
-      addToast(`Milestone weights must sum to exactly 100% (currently ${totalWeight}%)`, "error");
+    if (!selectedChallengeId || !selectedStartupId) {
+      addToast("Please select a target challenge and startup", "warning");
       return;
     }
 
     const challenge = challenges.find(c => c.id === selectedChallengeId);
     
-    // Look up startup name dynamically
-    const appMatch = applications.find(a => a.startupId === selectedStartupId || a.id === selectedStartupId);
-    const startupName = appMatch?.startupName || "Selected Startup";
+    // Look up application
+    const appMatch = applications.find(
+      a => a.challengeId === selectedChallengeId && (a.startupId === selectedStartupId || a.id === selectedStartupId)
+    ) || applications.find(a => a.startupId === selectedStartupId || a.id === selectedStartupId);
 
-    const pilotData = {
-      challengeId: selectedChallengeId,
-      challengeTitle: challenge?.title || "Pilot Challenge",
-      startupId: selectedStartupId,
-      applicationId: appMatch?.id || selectedStartupId,
-      startupName,
-      startDate,
-      endDate,
-      budget,
-      objectives,
-      responsibilities,
-      kpis,
-      milestones
+    if (!appMatch) {
+      addToast("No matching application proposal found for this startup and challenge", "error");
+      return;
+    }
+
+    const startupName = appMatch.startupName || "Selected Startup";
+
+    const pilotPayload = {
+      application_id: appMatch.id,
+      location: challenge?.location || objectives || 'Municipal Pilot Zone',
+      duration_days: 180,
+      baseline_value: 20,
+      target_value: 15,
+      milestones: milestones.map(m => ({
+        title: m.title,
+        description: m.description || null,
+        target_date: m.dueDate || null
+      }))
     };
 
-    createPilot(pilotData);
-    addToast(`Successfully initialized pilot deployment for ${startupName}`, "success");
-    navigate('/gov/pilots');
+    try {
+      await createPilot(pilotPayload);
+      addToast(`Successfully initiated pilot deployment for ${startupName}`, "success");
+      navigate('/gov/pilots');
+    } catch (err) {
+      addToast(err.message || "Failed to create pilot", "error");
+    }
   };
 
   // Get eligible startups for dropdown
-  const eligibleApplications = applications.filter(a => a.status === "🟢 Eligible" || a.status === "Shortlisted" || a.status === "Under Review");
+  const eligibleApplications = applications.filter(
+    a => a.status === "selected" || a.status === "Selected" || a.status === "shortlisted" || a.status === "Shortlisted"
+  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       
       {/* Title */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/gov/ranking')} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center cursor-pointer transition-colors">
+        <button onClick={() => navigate('/gov/applications')} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center cursor-pointer transition-colors">
           <ArrowLeft className="w-4 h-4 text-slate-600" />
         </button>
         <div>
@@ -178,12 +186,11 @@ const PilotCreator = () => {
                 {prefilled ? (
                   <option value={prefilled.startupId}>{prefilled.startupName}</option>
                 ) : (
-                  eligibleApplications.map(a => {
-                    const name = a.startupId === "startup-1" ? "HealthTech Solutions" : 
-                                 a.startupId === "startup-2" ? "RuralCare Labs" : 
-                                 a.startupId === "startup-3" ? "MedTech Systems" : "Startup Proposer";
-                    return <option key={a.id} value={a.startupId}>{name} ({a.id.toUpperCase()})</option>;
-                  })
+                  eligibleApplications.map(a => (
+                    <option key={a.id} value={a.startupId || a.id}>
+                      {a.startupName} ({a.id}) - {a.challengeTitle?.slice(0, 24)}...
+                    </option>
+                  ))
                 )}
               </select>
             </div>

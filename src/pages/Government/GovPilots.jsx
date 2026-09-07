@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Zap,
@@ -16,7 +16,9 @@ import {
   AlertCircle,
   MessageSquare,
   BarChart3,
-  FileText
+  FileText,
+  PlayCircle,
+  Check
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
@@ -25,14 +27,24 @@ import ChartCard from '../../components/Common/ChartCard';
 import EmptyState from '../../components/Common/EmptyState';
 
 const GovPilots = () => {
-  const { pilots, submitPilotValidation } = useApp();
+  const { pilots, submitPilotValidation, updatePilotStatus } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryPilotId = searchParams.get('pilotId');
 
-  const [selectedPilotId, setSelectedPilotId] = useState(pilots[0]?.id || '');
+  const [selectedPilotId, setSelectedPilotId] = useState(queryPilotId || pilots[0]?.id || '');
   const [selectedEvidenceFile, setSelectedEvidenceFile] = useState(null);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [validationComments, setValidationComments] = useState('');
   const [validationDecision, setValidationDecision] = useState('Validated');
+
+  useEffect(() => {
+    if (queryPilotId && pilots.some((p) => p.id === queryPilotId)) {
+      setSelectedPilotId(queryPilotId);
+    } else if (!selectedPilotId && pilots.length > 0) {
+      setSelectedPilotId(pilots[0].id);
+    }
+  }, [queryPilotId, pilots]);
 
   const currentPilot = pilots.find((p) => p.id === selectedPilotId) || pilots[0];
 
@@ -191,7 +203,7 @@ const GovPilots = () => {
                 Duration & Timeline
               </span>
               <span className="font-semibold text-slate-800">
-                {currentPilot.duration} ({currentPilot.startDate} to {currentPilot.endDate})
+                {currentPilot.duration}
               </span>
             </div>
           </div>
@@ -203,7 +215,7 @@ const GovPilots = () => {
                 Sanctioned Budget
               </span>
               <span className="font-bold text-emerald-800">
-                {currentPilot.budget}
+                {currentPilot.budget || '₹ 75,00,000'}
               </span>
             </div>
           </div>
@@ -215,9 +227,103 @@ const GovPilots = () => {
                 Validation Status
               </span>
               <span className="font-bold text-slate-900">
-                {currentPilot.expertValidation?.validationStatus || 'Pending'}
+                {currentPilot.expertValidation?.validationStatus || (currentPilot.rawStatus === 'completed' ? 'Ready for Validation' : 'Pending Deployment')}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Government Pilot Lifecycle Action Bar */}
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-2">
+            <div className={`w-2.5 h-2.5 rounded-full ${
+              currentPilot.rawStatus === 'not_started'
+                ? 'bg-slate-500 animate-pulse'
+                : currentPilot.rawStatus === 'approved'
+                ? 'bg-blue-600 animate-pulse'
+                : currentPilot.rawStatus === 'in_progress'
+                ? 'bg-emerald-600 animate-pulse'
+                : 'bg-purple-600'
+            }`} />
+            <div>
+              <span className="text-xs font-bold text-slate-900 block">
+                {currentPilot.rawStatus === 'not_started'
+                  ? 'Pilot Sanction Pending Formal Approval'
+                  : currentPilot.rawStatus === 'approved'
+                  ? 'Pilot Approved - Ready to Start Field Operations'
+                  : currentPilot.rawStatus === 'in_progress'
+                  ? 'Field Pilot Active & Streaming Telemetry'
+                  : 'Pilot Trials Completed - Expert Validation Active'}
+              </span>
+              <span className="text-[11px] text-slate-500">
+                {currentPilot.rawStatus === 'not_started'
+                  ? 'Review terms and click Approve to authorize sandbox deployment.'
+                  : currentPilot.rawStatus === 'approved'
+                  ? 'Click Start Pilot to begin live field operations and open telemetry ingestion.'
+                  : currentPilot.rawStatus === 'in_progress'
+                  ? 'Startup is submitting milestone proof and sensor logs for verification.'
+                  : 'Validation sign-off will clear this solution for Direct Procurement Orders.'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {currentPilot.rawStatus === 'not_started' && (
+              <Button
+                variant="success"
+                size="sm"
+                icon={CheckCircle2}
+                onClick={async () => {
+                  await updatePilotStatus(currentPilot.id, 'approved');
+                }}
+                className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Approve Pilot Sanction
+              </Button>
+            )}
+
+            {currentPilot.rawStatus === 'approved' && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={PlayCircle}
+                onClick={async () => {
+                  await updatePilotStatus(currentPilot.id, 'in_progress');
+                }}
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+              >
+                Start Pilot Deployment
+              </Button>
+            )}
+
+            {currentPilot.rawStatus === 'in_progress' && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={Check}
+                onClick={async () => {
+                  await updatePilotStatus(currentPilot.id, 'completed');
+                }}
+                className="text-xs border-emerald-600 text-emerald-800 hover:bg-emerald-50"
+              >
+                Mark Field Trials Completed
+              </Button>
+            )}
+
+            {currentPilot.rawStatus === 'completed' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={ShieldCheck}
+                onClick={() => {
+                  setValidationDecision('Validated');
+                  setIsValidationModalOpen(true);
+                }}
+                className="text-xs"
+              >
+                Inspect Validation Sign-off
+              </Button>
+            )}
           </div>
         </div>
       </div>

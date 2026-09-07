@@ -17,10 +17,16 @@ export const assignExpertToApplication = async (req, res) => {
       return ApiResponse.error(res, 'application_id and expert_id are required', 422, 'VALIDATION_ERROR');
     }
 
-    // 1. Verify application exists
+    // 1. Authorization: Only Government Officers and Admins
+    const userRole = req.user?.role?.toLowerCase();
+    if (userRole !== 'government') {
+      return ApiResponse.error(res, 'Access denied: Only Government Officers and Platform Admins can assign experts.', 403, 'FORBIDDEN');
+    }
+
+    // 2. Verify application exists
     const { data: app, error: appError } = await supabaseAdmin
       .from('applications')
-      .select('id, challenge_id, challenges(title), startups(name)')
+      .select('id, challenge_id, status, challenges(id, title, department_id), startups(id, name)')
       .eq('id', applicationId)
       .single();
 
@@ -28,11 +34,11 @@ export const assignExpertToApplication = async (req, res) => {
       return ApiResponse.error(res, 'Application not found', 404, 'NOT_FOUND');
     }
 
-    // 2. Verify expert exists (by expert id or user_id)
+    // 3. Verify expert exists with corresponding profile
     let expert = null;
     const { data: expById } = await supabaseAdmin
       .from('experts')
-      .select('id, user_id, profiles(full_name, email)')
+      .select('id, user_id, verified, expertise, organization, profiles(id, full_name, email, role, is_active)')
       .eq('id', expert_id)
       .maybeSingle();
 
@@ -41,29 +47,43 @@ export const assignExpertToApplication = async (req, res) => {
     } else {
       const { data: expByUser } = await supabaseAdmin
         .from('experts')
-        .select('id, user_id, profiles(full_name, email)')
+        .select('id, user_id, verified, expertise, organization, profiles(id, full_name, email, role, is_active)')
         .eq('user_id', expert_id)
         .maybeSingle();
       if (expByUser) expert = expByUser;
     }
 
     if (!expert) {
-      return ApiResponse.error(res, 'Expert not found', 404, 'NOT_FOUND');
+      return ApiResponse.error(res, 'Selected expert not found', 404, 'NOT_FOUND');
     }
 
-    // 3. Prevent duplicate assignment
+    // 4. Verify expert profile role = expert
+    if (!expert.profiles || expert.profiles.role !== 'expert') {
+      return ApiResponse.error(res, 'The selected user is not registered as an expert evaluator', 400, 'INVALID_EXPERT_ROLE');
+    }
+
+    // 5. Verify expert profile is_active = true
+    if (expert.profiles.is_active === false) {
+      return ApiResponse.error(res, 'This expert account is currently inactive', 400, 'EXPERT_INACTIVE');
+    }
+
+    // 6. Verify expert record verified = true
+    if (!expert.verified) {
+      return ApiResponse.error(res, 'This expert must be verified by Platform Administration before assignment', 400, 'EXPERT_NOT_VERIFIED');
+    }
+
+    // 7. Verify application does not already have an active assignment
     const { data: existing } = await supabaseAdmin
       .from('expert_assignments')
-      .select('id')
+      .select('id, expert_id, status')
       .eq('application_id', applicationId)
-      .eq('expert_id', expert.id)
       .maybeSingle();
 
     if (existing) {
-      return ApiResponse.error(res, 'This expert is already assigned to this application', 409, 'ALREADY_ASSIGNED');
+      return ApiResponse.error(res, 'An expert is already assigned to this application.', 409, 'ALREADY_ASSIGNED');
     }
 
-    // 4. Create assignment
+    // 8. Create assignment record with assigned_by = authenticated government officer's ID
     const { data: assignment, error: assignError } = await supabaseAdmin
       .from('expert_assignments')
       .insert([
@@ -75,35 +95,57 @@ export const assignExpertToApplication = async (req, res) => {
           created_at: new Date().toISOString()
         }
       ])
-      .select('*, experts(*, profiles(full_name, email))')
+      .select('*, experts(id, expertise, organization, verified, profiles(id, full_name, email, role, is_active))')
       .single();
 
     if (assignError) {
       logger.error('Error assigning expert to application', assignError);
-      return ApiResponse.error(res, 'Failed to assign expert', 500, 'SERVER_ERROR');
+      return ApiResponse.error(res, 'Failed to assign expert to application', 500, 'SERVER_ERROR');
     }
 
-    // 5. Audit Log
-    await logAudit({
-      userId: req.user.id,
-      action: AuditActions.EXPERT_ASSIGNED,
-      entityType: 'expert_assignment',
-      entityId: assignment.id,
-      description: `Assigned expert '${expert.profiles?.full_name}' to application '${app.startups?.name}' for '${app.challenges?.title}'`
-    });
+    const expertName = expert.profiles?.full_name || 'Expert Evaluator';
+    const challengeTitle = app.challenges?.title || 'Challenge Proposal';
 
-    // 6. Notify Expert
-    if (expert.user_id) {
-      await createNotification({
-        userId: expert.user_id,
-        role: 'expert',
-        title: 'New Proposal Assigned for Evaluation',
-        message: `You have been assigned to evaluate a proposal by ${app.startups?.name} for '${app.challenges?.title}'.`,
-        type: 'info'
+    // 9. Audit Log
+    try {
+      await logAudit({
+        userId: req.user.id,
+        action: AuditActions.EXPERT_ASSIGNED,
+        entityType: 'application',
+        entityId: applicationId,
+        description: `Government Officer assigned ${expertName} as expert evaluator.`
       });
+    } catch (auditErr) {
+      logger.warn('Failed to log audit for expert assignment', auditErr);
     }
 
-    return ApiResponse.success(res, { assignment }, 'Expert assigned to application successfully', 201);
+    // 10. Notification for the assigned expert
+    if (expert.user_id) {
+      try {
+        await createNotification({
+          userId: expert.user_id,
+          role: 'expert',
+          title: 'New Application Assigned',
+          message: `You have been assigned as the expert evaluator for "${challengeTitle}".`,
+          type: 'info'
+        });
+      } catch (notifErr) {
+        logger.warn('Failed to send notification to expert', notifErr);
+      }
+    }
+
+    return ApiResponse.success(
+      res,
+      {
+        assignment: {
+          ...assignment,
+          expert_name: expertName,
+          expert_organization: expert.organization || expert.profiles?.organization || 'Technical Expert'
+        }
+      },
+      'Expert assigned to application successfully',
+      201
+    );
   } catch (error) {
     logger.error('Error in assignExpertToApplication controller', error);
     return ApiResponse.error(res, 'Failed to assign expert', 500, 'SERVER_ERROR');

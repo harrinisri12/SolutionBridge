@@ -60,6 +60,19 @@ export const applicationService = {
   },
 
   /**
+   * Fetch real verified active experts from the backend (for assignment modal)
+   */
+  async getVerifiedExperts() {
+    const response = await api.get('/users?role=expert&is_active=true');
+    const users = response?.data?.users || [];
+    // Only return experts where profiles.role = 'expert', profiles.is_active = true, experts.verified = true
+    return users.filter((u) => {
+      const expert = Array.isArray(u.expert) ? u.expert[0] : u.expert;
+      return u.role === 'expert' && u.is_active !== false && expert?.verified === true;
+    });
+  },
+
+  /**
    * Submit expert 5-criteria evaluation (Expert)
    */
   async submitEvaluation(applicationId, evaluationData) {

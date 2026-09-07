@@ -125,7 +125,12 @@ export const normalizeApplication = (a) => {
     evaluatedBy: ev?.experts?.profiles?.full_name || '',
     evaluationDate: ev?.created_at ? new Date(ev.created_at).toISOString().split('T')[0] : '',
     expertAssigned: Boolean(asg),
-    assignedExpertName: asg?.experts?.profiles?.full_name || '',
+    assignedExpertName: asg?.experts?.profiles?.full_name || asg?.expert?.profiles?.full_name || asg?.expert_name || '',
+    assignedExpertOrg: asg?.experts?.organization || asg?.experts?.profiles?.organization || asg?.expert_organization || '',
+    assignedExpertId: asg?.expert_id || '',
+    assignedBy: asg?.assigned_by_profile?.full_name || asg?.assigned_by || '',
+    assignedAt: asg?.created_at ? new Date(asg.created_at).toLocaleDateString() : '',
+    expertAssignments: a.expert_assignments || (asg ? [asg] : []),
     startups: a.startups || null
   };
 };
@@ -688,6 +693,18 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const assignExpert = async (applicationId, expertId) => {
+    try {
+      const response = await applicationService.assignExpert(applicationId, expertId);
+      addToast("Expert assigned successfully!", "success");
+      await refreshData();
+      return response?.data?.assignment;
+    } catch (err) {
+      addToast(err.message || "Failed to assign expert", "error");
+      throw err;
+    }
+  };
+
   // 3. Pilot & Evidence Handlers
   const createPilot = async (pilotData) => {
     try {
@@ -844,6 +861,7 @@ export const AppProvider = ({ children }) => {
       canManageChallenge,
       submitApplication,
       updateApplicationStatus,
+      assignExpert,
       submitExpertEvaluation,
       createPilot,
       uploadPilotEvidence,

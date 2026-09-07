@@ -113,7 +113,7 @@ export const listApplications = async (req, res) => {
       const { data: assignments } = await supabaseAdmin
         .from('expert_assignments')
         .select('application_id')
-        .eq('expert_id', expert.id);
+        .or(`expert_id.eq.${expert.id},expert_id.eq.${user.id}`);
 
       const assignedAppIds = (assignments || []).map((a) => a.application_id);
 

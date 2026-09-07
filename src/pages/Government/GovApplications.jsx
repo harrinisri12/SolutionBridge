@@ -17,13 +17,16 @@ import {
   FileText,
   ShieldCheck,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
 import Modal from '../../components/Common/Modal';
 import EmptyState from '../../components/Common/EmptyState';
 import ChartCard from '../../components/Common/ChartCard';
+import AssignExpertModal from '../../components/Government/AssignExpertModal';
 
 const GovApplications = () => {
   const {
@@ -40,6 +43,7 @@ const GovApplications = () => {
 
   // Drawer / Modal States
   const [selectedApp, setSelectedApp] = useState(null);
+  const [assignModalApp, setAssignModalApp] = useState(null);
   const [statusUpdateComment, setStatusUpdateComment] = useState('');
 
   // Filtered Applications
@@ -216,6 +220,7 @@ const GovApplications = () => {
                       <th>Challenge</th>
                       <th>Application Date</th>
                       <th>Eligibility</th>
+                      <th>Expert Evaluator</th>
                       <th>Expert Score</th>
                       <th>Status</th>
                       <th className="text-right">Action</th>
@@ -224,6 +229,8 @@ const GovApplications = () => {
                   <tbody>
                     {filteredApps.map((app) => {
                       const score = app.scores?.overallScore || 0;
+                      const hasExpert = Boolean(app.expertAssigned || app.assignedExpertName);
+
                       return (
                         <tr key={app.id}>
                           {/* Startup */}
@@ -268,6 +275,39 @@ const GovApplications = () => {
                             </span>
                           </td>
 
+                          {/* Expert Evaluator (STEP 2 & 10) */}
+                          <td>
+                            {hasExpert ? (
+                              <div className="space-y-0.5">
+                                <div className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                                  <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <span>{app.assignedExpertName || 'Verified Expert'}</span>
+                                </div>
+                                <div className="text-[10px] text-emerald-700 font-medium">
+                                  Assigned
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400 italic">
+                                  Not Assigned
+                                </span>
+                                <Button
+                                  size="xs"
+                                  variant="primary"
+                                  icon={UserPlus}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAssignModalApp(app);
+                                  }}
+                                  className="text-[11px] py-1 px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shadow-2xs"
+                                >
+                                  Assign Expert
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+
                           {/* Expert Score */}
                           <td>
                             {score > 0 ? (
@@ -294,14 +334,30 @@ const GovApplications = () => {
 
                           {/* Action */}
                           <td className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              icon={Eye}
-                              onClick={() => setSelectedApp(app)}
-                            >
-                              Review
-                            </Button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              {!hasExpert && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={UserPlus}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAssignModalApp(app);
+                                  }}
+                                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                  Assign Expert
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                icon={Eye}
+                                onClick={() => setSelectedApp(app)}
+                              >
+                                Review
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -450,9 +506,28 @@ const GovApplications = () => {
                       </div>
                     </div>
 
+                    {/* Expert Evaluator Assignment Info */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Expert Evaluator:</span>
+                      {app.expertAssigned || app.assignedExpertName ? (
+                        <span className="font-semibold text-blue-900 flex items-center gap-1">
+                          <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                          {app.assignedExpertName}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setAssignModalApp(app)}
+                          className="font-semibold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                        >
+                          + Assign Expert
+                        </button>
+                      )}
+                    </div>
+
                     {/* Recommendation snippet */}
                     {app.expertRecommendation && (
-                      <div className="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-700 italic">
+                      <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-700 italic">
                         "{app.expertRecommendation}"
                       </div>
                     )}
@@ -644,6 +719,69 @@ const GovApplications = () => {
               </div>
             </div>
 
+            {/* Expert Assignment Section (STEP 10 & 11) */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <h4 className="font-bold text-slate-900 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-blue-600" />
+                  Expert Assignment
+                </h4>
+                {selectedApp.expertAssigned || selectedApp.assignedExpertName ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Assigned
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    Not Assigned
+                  </span>
+                )}
+              </div>
+
+              {selectedApp.expertAssigned || selectedApp.assignedExpertName ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-700">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase block">Expert</span>
+                    <span className="font-semibold text-slate-900">{selectedApp.assignedExpertName || 'Verified Expert'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase block">Organization</span>
+                    <span className="font-semibold text-slate-900">{selectedApp.assignedExpertOrg || 'Domain Expert'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase block">Assigned By</span>
+                    <span className="font-medium text-slate-800">{selectedApp.assignedBy || 'Government Officer'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase block">Assigned At</span>
+                    <span className="font-medium text-slate-800">{selectedApp.assignedAt || selectedApp.submittedDate}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded border border-slate-200">
+                  <div>
+                    <p className="text-xs text-slate-700 font-medium">
+                      No independent expert evaluator has been assigned to this application.
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Assign a verified expert to conduct the standardized 5-factor scoring audit.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={UserPlus}
+                    className="bg-blue-600 hover:bg-blue-700 text-white shrink-0 text-xs"
+                    onClick={() => {
+                      setAssignModalApp(selectedApp);
+                    }}
+                  >
+                    Assign Expert
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Expert Evaluation & Scores Breakdown */}
             <div className="bg-slate-900 text-white p-4 rounded-lg">
               <div className="flex items-center justify-between mb-3">
@@ -654,7 +792,7 @@ const GovApplications = () => {
                   </span>
                 </div>
                 <div className="text-xs text-slate-300">
-                  Evaluated by: <strong className="text-white">{selectedApp.evaluatedBy || 'Technical Committee'}</strong>
+                  Evaluated by: <strong className="text-white">{selectedApp.evaluatedBy || selectedApp.assignedExpertName || 'Technical Committee'}</strong>
                 </div>
               </div>
 
@@ -694,6 +832,23 @@ const GovApplications = () => {
           </div>
         </Modal>
       )}
+
+      {/* ASSIGN EXPERT MODAL (STEP 3, 4, 5, 10) */}
+      <AssignExpertModal
+        isOpen={!!assignModalApp}
+        onClose={() => setAssignModalApp(null)}
+        application={assignModalApp}
+        onAssigned={(assignedInfo) => {
+          if (selectedApp && selectedApp.id === assignModalApp.id) {
+            setSelectedApp((prev) => ({
+              ...prev,
+              expertAssigned: true,
+              assignedExpertName: assignedInfo.expertName,
+              assignedExpertOrg: assignedInfo.expertOrg
+            }));
+          }
+        }}
+      />
     </div>
   );
 };

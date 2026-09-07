@@ -268,7 +268,7 @@ export const listUsers = async (req, res) => {
 
     let query = supabaseAdmin
       .from('profiles')
-      .select('*, department:government_departments(name), expert:experts(expertise, organization, verified)')
+      .select('*, department:government_departments(name), expert:experts(id, user_id, expertise, organization, verified)')
       .order('created_at', { ascending: false });
 
     if (role) {

@@ -23,7 +23,8 @@ import {
   UserCheck,
   ChevronRight,
   Sparkles,
-  Briefcase
+  Briefcase,
+  Zap
 } from 'lucide-react';
 import Button from '../../components/Common/Button';
 import Badge from '../../components/Common/Badge';
@@ -37,28 +38,35 @@ const LIFECYCLE_STAGES = [
 ];
 
 const StartupApplicationDetail = () => {
-  const { id } = useParams();
+  const { id, applicationId } = useParams();
+  const appId = id || applicationId;
   const navigate = useNavigate();
-  const { applications, normalizeApplication } = useApp();
+  const { applications, normalizeApplication, pilots } = useApp();
 
-  const [application, setApplication] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [application, setApplication] = useState(() => {
+    if (!appId) return null;
+    const found = applications.find((a) => String(a.id) === String(appId));
+    return found || null;
+  });
+  const [isLoading, setIsLoading] = useState(!application);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchApp = async () => {
-      setIsLoading(true);
+      if (!application) {
+        setIsLoading(true);
+      }
       setError('');
       try {
         // Fetch full application with details and signed docs from backend API
-        const res = await applicationService.getApplicationById(id);
-        const appData = res?.data?.application;
+        const res = await applicationService.getApplicationById(appId);
+        const appData = res?.data?.application || res?.application || res?.data;
         if (appData && isMounted) {
           setApplication(normalizeApplication ? normalizeApplication(appData) : appData);
         } else {
-          const found = applications.find((a) => String(a.id) === String(id));
+          const found = applications.find((a) => String(a.id) === String(appId));
           if (found && isMounted) {
             setApplication(found);
           } else {
@@ -67,7 +75,7 @@ const StartupApplicationDetail = () => {
         }
       } catch (err) {
         console.error('Error loading application details:', err);
-        const found = applications.find((a) => String(a.id) === String(id));
+        const found = applications.find((a) => String(a.id) === String(appId));
         if (found && isMounted) {
           setApplication(found);
         } else {
@@ -78,12 +86,14 @@ const StartupApplicationDetail = () => {
       }
     };
 
-    fetchApp();
+    if (appId) {
+      fetchApp();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [id, applications, normalizeApplication]);
+  }, [appId, applications, normalizeApplication]);
 
   if (isLoading) {
     return (
@@ -96,12 +106,15 @@ const StartupApplicationDetail = () => {
   }
 
   if (error || !application) {
+    const isForbidden = error && (error.toLowerCase().includes('forbidden') || error.toLowerCase().includes('permission') || error.toLowerCase().includes('access'));
     return (
       <div className="p-8 text-center bg-white rounded-lg border border-slate-200 shadow-xs max-w-lg mx-auto my-12 space-y-4">
-        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+        <AlertCircle className={`w-10 h-10 ${isForbidden ? 'text-amber-500' : 'text-rose-500'} mx-auto`} />
         <div>
-          <h2 className="text-base font-bold text-slate-900">Application Not Found</h2>
-          <p className="text-xs text-slate-500 mt-1">{error || 'This application does not exist or you do not have permission to view it.'}</p>
+          <h2 className="text-base font-bold text-slate-900">
+            {isForbidden ? 'Access Restricted' : 'Application Not Found'}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">{error || 'This application record could not be found.'}</p>
         </div>
         <Button variant="primary" onClick={() => navigate('/startup/applications')}>
           Return to Applications
@@ -188,7 +201,7 @@ const StartupApplicationDetail = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-md border border-slate-200 text-xs text-slate-700">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase block">Application ID</span>
-            <span className="font-mono font-bold text-slate-900">{shortId}</span>
+            <span className="font-mono font-bold text-slate-900 break-all text-[11px]">{application.id || shortId}</span>
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase block">Target Challenge</span>
@@ -204,6 +217,44 @@ const StartupApplicationDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Pilot Deployment Card (if Pilot exists) */}
+      {(() => {
+        const existingPilot = application.pilot || (pilots && pilots.find((p) => p.applicationId === application.id || p.application_id === application.id));
+        if (!existingPilot) return null;
+        return (
+          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-lg p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-blue-800">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 bg-blue-800/80 rounded-lg border border-blue-700 shrink-0">
+                <Zap className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-blue-300">
+                    Field Pilot Deployment
+                  </span>
+                  <Badge status={existingPilot.status || 'not_started'} size="sm" />
+                </div>
+                <h3 className="text-sm font-bold text-white mt-0.5">
+                  Sandbox Pilot Deployment Sanctioned
+                </h3>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Field Location: <strong className="text-white">{existingPilot.location || 'Municipal Pilot Zone'}</strong> • Duration: <strong className="text-white">{existingPilot.duration_days || existingPilot.durationDays || 180} Days</strong>
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Zap}
+              onClick={() => navigate('/startup/pilot')}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-0 shadow-xs shrink-0 cursor-pointer"
+            >
+              Open Pilot Console
+            </Button>
+          </div>
+        );
+      })()}
 
       {/* 2. Visual Evaluation Progress Lifecycle */}
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-3">

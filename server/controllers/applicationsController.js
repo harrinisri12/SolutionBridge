@@ -215,64 +215,132 @@ export const getApplicationsByChallenge = async (req, res) => {
  */
 export const getApplicationById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.params.applicationId;
     const user = req.user;
 
-    const { data: application, error } = await supabaseAdmin
-      .from('applications')
-      .select('*, challenges(*, government_departments(name)), startups(*, profiles(full_name, email, phone)), evaluations(*, experts(id, expertise, organization, profiles(full_name, email)))')
-      .eq('id', id)
-      .single();
-
-    if (error || !application) {
-      return ApiResponse.error(res, 'Application not found', 404, 'NOT_FOUND');
+    if (!id) {
+      return ApiResponse.error(res, 'Application ID is required', 422, 'VALIDATION_ERROR');
     }
 
-    // Authorization check for startup
+    // 1. Fetch main application from public.applications
+    let application = null;
+    const { data: appData, error: appError } = await supabaseAdmin
+      .from('applications')
+      .select('*, challenges(id, title, category, department_id, government_departments(name)), startups(id, name, dpiit_number, sector, verified, user_id), evaluations(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (appError || !appData) {
+      // Fallback direct query without joins in case of schema relationship mismatch
+      const { data: rawApp, error: rawError } = await supabaseAdmin
+        .from('applications')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (rawError) {
+        logger.error('Database error fetching application by ID', rawError);
+        return ApiResponse.error(res, `Database error: ${rawError.message}`, 500, 'DATABASE_ERROR');
+      }
+
+      if (!rawApp) {
+        return ApiResponse.error(res, 'Application record could not be found', 404, 'NOT_FOUND');
+      }
+
+      let chData = null;
+      let stData = null;
+      let evData = [];
+      try {
+        if (rawApp.challenge_id) {
+          const { data: ch } = await supabaseAdmin.from('challenges').select('*, government_departments(name)').eq('id', rawApp.challenge_id).maybeSingle();
+          chData = ch;
+        }
+        if (rawApp.startup_id) {
+          const { data: st } = await supabaseAdmin.from('startups').select('*').eq('id', rawApp.startup_id).maybeSingle();
+          stData = st;
+        }
+        const { data: evs } = await supabaseAdmin.from('evaluations').select('*').eq('application_id', id);
+        evData = evs || [];
+      } catch (subErr) {
+        logger.warn('Sub-query warning during application fallback lookup', subErr);
+      }
+
+      application = {
+        ...rawApp,
+        challenges: chData,
+        startups: stData,
+        evaluations: evData
+      };
+    } else {
+      application = appData;
+    }
+
+    // 2. Role-based Authorization / Scoping
+    // Correct relationship: auth user (req.user.id) -> public.startups.user_id -> public.startups.id -> public.applications.startup_id
     if (user.role === 'startup') {
       const { data: startup } = await supabaseAdmin
         .from('startups')
-        .select('id')
+        .select('id, user_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!startup || startup.id !== application.startup_id) {
-        return ApiResponse.error(res, 'Access forbidden to this proposal', 403, 'FORBIDDEN');
+      const ownsApp =
+        (startup && (startup.id === application.startup_id || startup.user_id === user.id)) ||
+        application.startup_id === user.id ||
+        application.startups?.user_id === user.id ||
+        (user.startup_id && user.startup_id === application.startup_id);
+
+      if (!ownsApp && !user.is_admin) {
+        return ApiResponse.error(
+          res,
+          'Access forbidden: You do not have permission to view this application proposal.',
+          403,
+          'FORBIDDEN'
+        );
+      }
+    } else if (user.role === 'expert') {
+      const { data: expert } = await supabaseAdmin
+        .from('experts')
+        .select('id, user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (expert) {
+        const { data: assignment } = await supabaseAdmin
+          .from('expert_assignments')
+          .select('id')
+          .eq('application_id', id)
+          .or(`expert_id.eq.${expert.id},expert_id.eq.${user.id}`)
+          .maybeSingle();
+
+        if (!assignment && !user.is_admin) {
+          return ApiResponse.error(res, 'Access forbidden: You are not assigned to evaluate this application.', 403, 'FORBIDDEN');
+        }
       }
     }
 
-    // Fetch details, documents & assignments
+    // 3. Fetch details, documents, expert assignments & pilot
     let details = null;
     let documents = [];
     let expertAssignments = [];
+    let pilot = null;
 
     try {
-      const { data: det } = await supabaseAdmin
-        .from('application_details')
-        .select('*')
-        .eq('application_id', id)
-        .maybeSingle();
-      details = det;
-    } catch (e) {
-      logger.warn('Failed to fetch application_details', e);
-    }
+      const [
+        { data: det },
+        { data: asgs },
+        { data: docs },
+        { data: plt }
+      ] = await Promise.all([
+        supabaseAdmin.from('application_details').select('*').eq('application_id', id).maybeSingle(),
+        supabaseAdmin.from('expert_assignments').select('*, experts(id, expertise, organization, profiles(full_name, email))').eq('application_id', id),
+        supabaseAdmin.from('application_documents').select('*').eq('application_id', id).order('created_at', { ascending: true }),
+        supabaseAdmin.from('pilots').select('id, status, location, duration_days, baseline_value, target_value, actual_value, progress, created_at').eq('application_id', id).maybeSingle()
+      ]);
 
-    try {
-      const { data: asgs } = await supabaseAdmin
-        .from('expert_assignments')
-        .select('*, experts(id, expertise, organization, profiles(full_name, email))')
-        .eq('application_id', id);
+      details = det || null;
       expertAssignments = asgs || [];
-    } catch (e) {
-      logger.warn('Failed to fetch expert_assignments', e);
-    }
-
-    try {
-      const { data: docs } = await supabaseAdmin
-        .from('application_documents')
-        .select('*')
-        .eq('application_id', id)
-        .order('created_at', { ascending: true });
+      pilot = plt || null;
 
       if (Array.isArray(docs)) {
         documents = await Promise.all(
@@ -295,8 +363,8 @@ export const getApplicationById = async (req, res) => {
           })
         );
       }
-    } catch (e) {
-      logger.warn('Failed to fetch application_documents', e);
+    } catch (fetchErr) {
+      logger.warn('Non-fatal error enriching application details/documents/pilot', fetchErr);
     }
 
     return ApiResponse.success(
@@ -306,10 +374,11 @@ export const getApplicationById = async (req, res) => {
           ...application,
           details,
           documents,
-          expert_assignments: expertAssignments
+          expert_assignments: expertAssignments,
+          pilot
         }
       },
-      'Application details retrieved'
+      'Application details retrieved successfully'
     );
   } catch (error) {
     logger.error('Error in getApplicationById controller', error);

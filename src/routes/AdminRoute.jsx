@@ -38,13 +38,12 @@ const AdminRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const isGov = (authProfile.role || '').toLowerCase() === 'government';
-  const isAdmin = Boolean(authProfile.is_admin);
+  const userRole = (authProfile.role || '').toLowerCase();
+  const isAdmin = Boolean(authProfile.is_admin) || userRole === 'platform_admin';
 
   // Platform Admin verification
-  if (!isGov || !isAdmin) {
-    const userRole = (authProfile.role || '').toLowerCase();
-    if (userRole === 'government') {
+  if (!isAdmin) {
+    if (userRole === 'government' || userRole === 'platform_admin') {
       return <Navigate to="/gov/overview" replace />;
     }
     if (userRole === 'startup') {

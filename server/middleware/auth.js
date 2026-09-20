@@ -121,9 +121,14 @@ export const requireRole = (...allowedRoles) => {
     }
 
     const userRole = (req.user.role || '').toLowerCase();
+    const isAdmin = Boolean(req.user.is_admin) || userRole === 'platform_admin';
     const normalizedAllowed = allowedRoles.map((r) => r.toLowerCase());
 
-    if (!normalizedAllowed.includes(userRole)) {
+    const hasRole =
+      normalizedAllowed.includes(userRole) ||
+      (isAdmin && normalizedAllowed.includes('government'));
+
+    if (!hasRole) {
       return ApiResponse.error(
         res,
         `Access forbidden: requires one of [${allowedRoles.join(', ')}] role(s). Your role is '${req.user.role}'.`,
@@ -138,17 +143,17 @@ export const requireRole = (...allowedRoles) => {
 
 /**
  * Government Administrator Middleware
- * Requires role === 'government' and is_admin === true
+ * Requires role === 'government' / 'platform_admin' and is_admin === true
  */
 export const requireAdmin = (req, res, next) => {
   if (!req.user) {
     return ApiResponse.error(res, 'Authentication required', 401, 'UNAUTHORIZED');
   }
 
-  const isGov = (req.user.role || '').toLowerCase() === 'government';
-  const isAdmin = Boolean(req.user.is_admin);
+  const userRole = (req.user.role || '').toLowerCase();
+  const isAdmin = Boolean(req.user.is_admin) || userRole === 'platform_admin';
 
-  if (!isGov || !isAdmin) {
+  if (!isAdmin) {
     return ApiResponse.error(
       res,
       'Access forbidden: this operation requires authorized Government Administrator privileges.',

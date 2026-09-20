@@ -172,19 +172,22 @@ const LoginForm = ({
        * Administrator      -> /admin/overview
        */
       else if (selectedPlatform === 'government') {
-        if (backendRole !== 'government') {
+        const isGovAuthorized =
+          backendRole === 'government' ||
+          backendRole === 'platform_admin' ||
+          isAdmin;
+
+        if (!isGovAuthorized) {
           throw new Error(
             'Wrong platform. This account is not registered as a Government account.'
           );
         }
 
-        if (isAdmin) {
-          targetPath = '/admin/overview';
-          roleDisplayName = 'Platform Administrator';
-        } else {
-          targetPath = '/gov/overview';
-          roleDisplayName = 'Government Officer';
-        }
+        targetPath = '/gov/overview';
+        roleDisplayName =
+          isAdmin || backendRole === 'platform_admin'
+            ? 'Platform Administrator'
+            : 'Government Officer';
       }
 
       /*

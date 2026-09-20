@@ -19,8 +19,9 @@ export const listChallenges = async (req, res) => {
 
     // Non-government users can only see published challenges unless specific access
     const userRole = req.user?.role?.toLowerCase();
+    const isGovOrAdmin = userRole === 'government' || userRole === 'platform_admin' || Boolean(req.user?.is_admin);
 
-    if (userRole !== 'government') {
+    if (!isGovOrAdmin) {
       query = query.eq('status', 'published');
     } else if (status) {
       query = query.eq('status', status.toLowerCase());

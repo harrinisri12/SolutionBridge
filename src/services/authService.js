@@ -68,13 +68,16 @@ export const authService = {
     const validRoles = [
       'government',
       'startup',
-      'expert'
+      'expert',
+      'platform_admin'
     ];
 
     const role =
       profile.role?.toLowerCase();
 
-    if (!validRoles.includes(role)) {
+    const isAdmin = Boolean(profile.is_admin);
+
+    if (!validRoles.includes(role) && !isAdmin) {
 
       await supabase.auth.signOut();
 

@@ -274,16 +274,16 @@ export const AppProvider = ({ children }) => {
     const roleLower = (profile.role || '').toLowerCase();
     const isAdmin = Boolean(profile.is_admin);
 
-    if (roleLower === 'government') {
-      setCurrentRoleState(isAdmin ? 'Admin' : 'Government');
+    if (roleLower === 'government' || roleLower === 'platform_admin' || isAdmin) {
+      setCurrentRoleState('Government');
       setCurrentUser({
         id: profile.id,
-        name: profile.full_name || (isAdmin ? 'Platform Administrator' : 'Government Officer'),
-        designation: isAdmin ? 'Platform Administrator' : 'Government Officer',
+        name: profile.full_name || (isAdmin || roleLower === 'platform_admin' ? 'Platform Administrator' : 'Government Officer'),
+        designation: isAdmin || roleLower === 'platform_admin' ? 'Platform Administrator' : 'Government Officer',
         department: profile.department?.name || profile.organization || 'Government Department',
         departmentId: profile.department_id,
-        role: isAdmin ? 'Admin' : 'Government',
-        isAdmin,
+        role: 'Government',
+        isAdmin: isAdmin || roleLower === 'platform_admin',
         email: profile.email,
         avatar: (profile.full_name || 'GO').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       });

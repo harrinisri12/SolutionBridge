@@ -38,10 +38,15 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
   }
 
   const userRole = (authProfile.role || '').toLowerCase();
+  const isAdmin = Boolean(authProfile.is_admin) || userRole === 'platform_admin';
   const normalizedAllowed = allowedRoles.map((r) => r.toLowerCase());
 
-  // Role check
-  if (normalizedAllowed.length > 0 && !normalizedAllowed.includes(userRole)) {
+  // Role check with Admin override for Government portal
+  const isAuthorized =
+    normalizedAllowed.includes(userRole) ||
+    (isAdmin && normalizedAllowed.includes('government'));
+
+  if (normalizedAllowed.length > 0 && !isAuthorized) {
     // Redirect to the user's rightful portal
     if (userRole === 'startup') {
       return <Navigate to="/startup/overview" replace />;
@@ -49,7 +54,7 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     if (userRole === 'expert') {
       return <Navigate to="/expert/overview" replace />;
     }
-    if (userRole === 'government') {
+    if (userRole === 'government' || userRole === 'platform_admin' || isAdmin) {
       return <Navigate to="/gov/overview" replace />;
     }
     return <Navigate to="/login" replace />;

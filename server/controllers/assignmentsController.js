@@ -19,7 +19,8 @@ export const assignExpertToApplication = async (req, res) => {
 
     // 1. Authorization: Only Government Officers and Admins
     const userRole = req.user?.role?.toLowerCase();
-    if (userRole !== 'government') {
+    const isGovOrAdmin = userRole === 'government' || userRole === 'platform_admin' || Boolean(req.user?.is_admin);
+    if (!isGovOrAdmin) {
       return ApiResponse.error(res, 'Access denied: Only Government Officers and Platform Admins can assign experts.', 403, 'FORBIDDEN');
     }
 
